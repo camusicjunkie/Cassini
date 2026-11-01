@@ -28,7 +28,8 @@ All notable changes to this project are documented here. The format follows
   version shows at once instead of after the browser's cached copy expires.
 - Light/dark toggle in the top bar (kept in Pode.Web's theme cookie).
 - After an approval, the Preview on Promote rings keeps only the updates still pending
-  (`Select-PortcullisPendingRow`); the approved ones show under Last approval only.
+  (`Select-PortcullisPendingRow`); Last approval lists only the updates actually approved, and a run
+  that approves nothing leaves the previous Last approval in place.
 - Table control rows (refresh, page size) sit below the table instead of against its edge, and the
   open sidebar has a fixed width so page names fit on narrow windows.
 - Promote rings keeps the last approval (who, when, what) in the session and shows it again when

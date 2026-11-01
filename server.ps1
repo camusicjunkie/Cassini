@@ -191,14 +191,19 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
             $user = Resolve-PortcullisUser -AuthUser $WebEvent.Auth.User
             try {
                 $rows = Invoke-PortcullisRingApproval -Config (Get-PodeState -Name 'Config') -Preview $WebEvent.Session.Data.RingPreview -PreviewId $WebEvent.Data.Value -User $user -Confirm:$false
-                $approved = @($rows | Where-Object ApprovedTo).Count
-                # Kept in the session so the result is still here after leaving the page and coming back.
-                $WebEvent.Session.Data.RingResult = @{
-                    When = '{0:yyyy-MM-dd HH:mm} by {1}' -f (Get-Date), $user
-                    Rows = @($rows)
+                # Last approval lists only what was actually approved; held updates stay in the preview.
+                $approvedRows = @($rows | Where-Object ApprovedTo)
+                $approved = $approvedRows.Count
+                if ($approved -gt 0) {
+                    # Kept in the session so the result is still here after leaving the page and coming back.
+                    # A run that approved nothing leaves the previous last approval in place.
+                    $WebEvent.Session.Data.RingResult = @{
+                        When = '{0:yyyy-MM-dd HH:mm} by {1}' -f (Get-Date), $user
+                        Rows = $approvedRows
+                    }
+                    Update-PodeWebText -Id 'ring_result_when' -Value "Approved $($WebEvent.Session.Data.RingResult.When)."
+                    Update-PodeWebTable -Name 'RingResult' -Data $approvedRows
                 }
-                Update-PodeWebText -Id 'ring_result_when' -Value "Approved $($WebEvent.Session.Data.RingResult.When)."
-                Update-PodeWebTable -Name 'RingResult' -Data @($rows)
 
                 # The preview keeps only what is still pending; what was approved is under Last approval.
                 $pending = @(Select-PortcullisPendingRow -PreviewRow $WebEvent.Session.Data.RingPreviewRows -ApprovalRow $rows)
