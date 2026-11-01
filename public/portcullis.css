@@ -17,6 +17,7 @@ body[pode-theme] {
     --pc-radius: 10px;
     --pc-radius-sm: 7px;
     --pc-rail: 3.75rem;
+    --pc-sidebar: 15rem;
 }
 
 body[pode-theme='light'] {
@@ -224,6 +225,23 @@ body[pode-theme] .footer.powered-by {
 
 body[pode-theme] .footer.powered-by .mdi-heart {
     color: var(--pc-text-3) !important;
+}
+
+/* Open sidebar: a fixed width instead of Bootstrap's share of the window (a sixth on wide screens),
+   which got too narrow for the page names around 1024px. */
+@media (min-width: 768px) {
+    nav#sidebarMenu:not(.hide) {
+        width: var(--pc-sidebar) !important;
+        max-width: var(--pc-sidebar) !important;
+        flex: 0 0 var(--pc-sidebar) !important;
+    }
+
+    main[role='main']:not(.fullscreen) {
+        margin-left: var(--pc-sidebar) !important;
+        width: calc(100% - var(--pc-sidebar)) !important;
+        max-width: calc(100% - var(--pc-sidebar)) !important;
+        flex: 0 0 calc(100% - var(--pc-sidebar)) !important;
+    }
 }
 
 /* Collapsed sidebar: Pode.Web hides it completely (.hide) and widens the page (.fullscreen).
@@ -758,4 +776,43 @@ nav#pode-breadcrumb:not(:has(li)) {
         top: 0.5rem;
         margin: 0;
     }
+}
+
+/* ------------------------------------------------------- Table control row */
+
+/* Refresh, page-size and page links sit in a row under the table. Pode.Web puts it flush against the
+   table's bottom edge; give it room and line its parts up. */
+div[role='table'] > div[role='controls'] {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+}
+
+div[role='table'] > div[role='controls']:empty {
+    display: none;
+}
+
+div[role='table'] > div[role='controls'] .btn-group {
+    margin: 0 !important;
+}
+
+body[pode-theme] div[role='table'] nav[role='pagination'] {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 0 auto;
+    float: none;
+}
+
+body[pode-theme] div[role='table'] nav[role='pagination'] .pagination {
+    margin: 0;
+}
+
+body[pode-theme] div[role='table'] nav[role='pagination'] input.page-size {
+    width: 4.5rem;
+    height: 2rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.85rem;
 }

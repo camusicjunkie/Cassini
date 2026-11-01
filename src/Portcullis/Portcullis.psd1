@@ -32,6 +32,7 @@
         'Invoke-PortcullisSync'
         'New-PortcullisPreview'
         'Resolve-PortcullisUser'
+        'Select-PortcullisPendingRow'
     )
     CmdletsToExport      = @()
     VariablesToExport    = @()

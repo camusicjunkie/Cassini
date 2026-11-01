@@ -1,7 +1,6 @@
 # Fake WSUS module for running the portal without WSUS (dev/Start-DevServer.ps1).
 # Same function names and parameters the portal uses, canned data, nothing real. Never deploy it.
 
-$script:Declined = [System.Collections.Generic.List[string]]::new()
 
 function Get-WsusNodeStatus {
     [CmdletBinding()]
@@ -26,7 +25,7 @@ function Get-WsusNodeStatus {
             SyncTotalItems      = $null
             UpdateCount         = 4210
             ApprovedUpdateCount = 311
-            DeclinedUpdateCount = 3120 + $script:Declined.Count
+            DeclinedUpdateCount = 3120
             DownloadPendingMB   = 0
             DownloadFailedCount = 0
         }
@@ -86,10 +85,10 @@ function Deny-WsusUpdate {
         $number = $article -replace '^KB', ''
         foreach ($arch in 'x64', 'arm64') {
             $title = "2026-10 Security Update for Microsoft Edge ($arch)"
-            $action = if ($script:Declined -contains "$number-$arch") { 'AlreadyDeclined' } else { 'Declined' }
+            # Stateless, like Approve-WsusRing above: every decline succeeds, in every runspace.
+            $action = 'Declined'
             if ($action -eq 'Declined') {
                 if (-not $PSCmdlet.ShouldProcess($title, 'Decline update')) { continue }
-                $script:Declined.Add("$number-$arch")
             }
             [PSCustomObject] @{
                 PSTypeName = 'WSUS.DeclineResult'
@@ -111,7 +110,4 @@ function Start-WsusSync {
     }
 }
 
-# Exposed so the fake UpdateServices module can mirror declines.
-function Get-FakeWsusDeclined { $script:Declined }
-
-Export-ModuleMember -Function Get-WsusNodeStatus, Approve-WsusRing, Deny-WsusUpdate, Start-WsusSync, Get-FakeWsusDeclined
+Export-ModuleMember -Function Get-WsusNodeStatus, Approve-WsusRing, Deny-WsusUpdate, Start-WsusSync

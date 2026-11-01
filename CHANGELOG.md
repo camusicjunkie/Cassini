@@ -27,6 +27,10 @@ All notable changes to this project are documented here. The format follows
 - `portcullis.css` and `portcullis.js` are requested with a hash of the file in the URL, so a new
   version shows at once instead of after the browser's cached copy expires.
 - Light/dark toggle in the top bar (kept in Pode.Web's theme cookie).
+- After an approval, the Preview on Promote rings keeps only the updates still pending
+  (`Select-PortcullisPendingRow`); the approved ones show under Last approval only.
+- Table control rows (refresh, page size) sit below the table instead of against its edge, and the
+  open sidebar has a fixed width so page names fit on narrow windows.
 - Promote rings keeps the last approval (who, when, what) in the session and shows it again when
   the page is reopened.
 - Space between a table and the button under it.

@@ -8,13 +8,12 @@ function Get-WsusServer {
     $server = [PSCustomObject] @{ Name = $Name }
     $server | Add-Member -MemberType ScriptMethod -Name SearchUpdates -Value {
         param ([string] $Text)
-        $declined = @(WSUS\Get-FakeWsusDeclined)
         foreach ($arch in 'x64', 'arm64') {
             [PSCustomObject] @{
                 Title                 = "2026-10 Security Update for Microsoft Edge ($arch)"
                 KnowledgebaseArticles = @($Text)
                 ArrivalDate           = (Get-Date).AddDays(-6)
-                IsDeclined            = $declined -contains "$Text-$arch"
+                IsDeclined            = $false
                 IsSuperseded          = $false
             }
         }

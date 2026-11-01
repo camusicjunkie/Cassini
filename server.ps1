@@ -140,12 +140,14 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
                 }
                 catch {
                     $WebEvent.Session.Data.Remove('RingPreview')
+                    $WebEvent.Session.Data.Remove('RingPreviewRows')
                     Disable-PodeWebButton -Name 'ApproveRing'
                     Show-PodeWebToast -Title 'Preview failed' -Message $_.Exception.Message -Duration 15000
                     return
                 }
 
                 $WebEvent.Session.Data.RingPreview = $result.Preview
+                $WebEvent.Session.Data.RingPreviewRows = @($result.Rows)
                 $summary = $result.Summary
                 $text = 'Candidates: {0}. Would be approved: {1} ({2} forced). Held: {3}.' -f $summary.Candidates, $summary.Approvable, $summary.Forced, $summary.Held
                 Update-PodeWebText -Id 'ring_summary' -Value $text
@@ -197,12 +199,24 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
                 }
                 Update-PodeWebText -Id 'ring_result_when' -Value "Approved $($WebEvent.Session.Data.RingResult.When)."
                 Update-PodeWebTable -Name 'RingResult' -Data @($rows)
+
+                # The preview keeps only what is still pending; what was approved is under Last approval.
+                $pending = @(Select-PortcullisPendingRow -PreviewRow $WebEvent.Session.Data.RingPreviewRows -ApprovalRow $rows)
+                if ($pending.Count -gt 0) {
+                    Update-PodeWebText -Id 'ring_summary' -Value ('Approved {0}. Still pending: {1}, shown below. Preview again once more Pilot computers have installed them, or use Force for an out-of-band update.' -f $approved, $pending.Count)
+                    Update-PodeWebTable -Name 'RingPreview' -Data $pending
+                }
+                else {
+                    Update-PodeWebText -Id 'ring_summary' -Value "Approved $approved. Nothing from this preview is still pending."
+                    Clear-PodeWebTable -Name 'RingPreview'
+                }
                 Show-PodeWebToast -Title 'Rings' -Message "Approved $approved update(s). The replica copies them on its next sync."
             }
             catch {
                 Show-PodeWebToast -Title 'Approval not run' -Message $_.Exception.Message -Duration 15000
             }
             $WebEvent.Session.Data.Remove('RingPreview')
+            $WebEvent.Session.Data.Remove('RingPreviewRows')
             Disable-PodeWebButton -Name 'ApproveRing'
             Hide-PodeWebModal
         }
