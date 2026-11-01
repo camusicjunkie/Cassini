@@ -1,0 +1,55 @@
+BeforeDiscovery {
+    $publicFiles = Get-ChildItem -Path (Join-Path -Path $PSScriptRoot -ChildPath '..\src\Portcullis\Public') -Filter '*.ps1'
+    $script:publicNames = @($publicFiles.BaseName)
+}
+
+BeforeAll {
+    . (Join-Path -Path $PSScriptRoot -ChildPath 'helpers\TestSetup.ps1')
+    $script:manifestPath = Join-Path -Path $PSScriptRoot -ChildPath '..\src\Portcullis\Portcullis.psd1'
+}
+AfterAll { Remove-PortcullisTestEnvironment }
+
+Describe 'Portcullis module contract' {
+    It 'has a valid manifest' {
+        { Test-ModuleManifest -Path $script:manifestPath -ErrorAction Stop } | Should -Not -Throw
+    }
+
+    It 'exports exactly the functions in Public/' {
+        $exported = @((Import-PowerShellDataFile -Path $script:manifestPath).FunctionsToExport)
+        $files = @((Get-ChildItem -Path (Join-Path -Path $PSScriptRoot -ChildPath '..\src\Portcullis\Public') -Filter '*.ps1').BaseName)
+        Compare-Object -ReferenceObject $files -DifferenceObject $exported | Should -BeNullOrEmpty
+    }
+
+    It '<_> has a synopsis, a description and an example' -ForEach $script:publicNames {
+        $help = Get-Help -Name $_ -Full
+        $help.Synopsis | Should -Not -BeNullOrEmpty
+        $help.Synopsis | Should -Not -Match "^\s*$_\s"
+        $help.Description | Should -Not -BeNullOrEmpty
+        @($help.Examples.Example).Count | Should -BeGreaterThan 0
+    }
+}
+
+Describe 'server.ps1 and dev scripts' {
+    It '<_> parses without errors' -ForEach @('server.ps1', 'dev\Start-DevServer.ps1') {
+        $path = Join-Path -Path $PSScriptRoot -ChildPath "..\$_"
+        $errors = $null
+        $null = [System.Management.Automation.Language.Parser]::ParseFile((Resolve-Path -Path $path), [ref] $null, [ref] $errors)
+        $errors | Should -BeNullOrEmpty
+    }
+
+    It 'server.ps1 only calls Portcullis functions that the module exports' {
+        $path = Resolve-Path -Path (Join-Path -Path $PSScriptRoot -ChildPath '..\server.ps1')
+        $ast = [System.Management.Automation.Language.Parser]::ParseFile($path, [ref] $null, [ref] $null)
+        $called = @($ast.FindAll({ $args[0] -is [System.Management.Automation.Language.CommandAst] }, $true) |
+                ForEach-Object { $_.GetCommandName() } | Where-Object { $_ -like '*-Portcullis*' } | Sort-Object -Unique)
+        $exported = @((Import-PowerShellDataFile -Path $script:manifestPath).FunctionsToExport)
+
+        $called | Should -Not -BeNullOrEmpty
+        $called | Where-Object { $_ -notin $exported } | Should -BeNullOrEmpty
+    }
+
+    It 'the example configuration is accepted' {
+        $example = Join-Path -Path $PSScriptRoot -ChildPath '..\config\portcullis.example.psd1'
+        (Get-PortcullisConfig -Path $example).UpstreamServer | Should -Be 'wsus01.corp.local'
+    }
+}

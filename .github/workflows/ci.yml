@@ -1,0 +1,38 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: build (${{ matrix.shell }})
+    runs-on: windows-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shell: [pwsh, powershell]
+    steps:
+      - uses: actions/checkout@v4
+
+      # The shell key takes a literal value, so each shell gets its own step.
+      - name: Analyse and test (pwsh)
+        if: matrix.shell == 'pwsh'
+        shell: pwsh
+        run: ./build.ps1 -Task All
+
+      - name: Analyse and test (Windows PowerShell)
+        if: matrix.shell == 'powershell'
+        shell: powershell
+        run: ./build.ps1 -Task All
+
+      - name: Upload test results and coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: results-${{ matrix.shell }}
+          path: artifacts/*.xml
