@@ -1,6 +1,23 @@
 # Fake WSUS module for running the portal without WSUS (dev/Start-DevServer.ps1).
 # Same function names and parameters the portal uses, canned data, nothing real. Never deploy it.
 
+# Ring approvals are remembered in a file, not in the module: Pode runs requests in several
+# runspaces, each with its own copy of this module. Start-DevServer.ps1 sets the path and clears the
+# file on every start. Without it (the variable unset) every preview starts from scratch.
+function Get-FakeRingApproval {
+    if (-not $env:PORTCULLIS_DEV_STATE -or -not (Test-Path -LiteralPath $env:PORTCULLIS_DEV_STATE)) {
+        return
+    }
+    Get-Content -LiteralPath $env:PORTCULLIS_DEV_STATE
+}
+
+function Add-FakeRingApproval {
+    param ([string] $Kb)
+
+    if ($env:PORTCULLIS_DEV_STATE) {
+        Add-Content -LiteralPath $env:PORTCULLIS_DEV_STATE -Value $Kb
+    }
+}
 
 function Get-WsusNodeStatus {
     [CmdletBinding()]
@@ -48,7 +65,12 @@ function Approve-WsusRing {
         @{ Update = '2026-10 Security Update for Microsoft Edge'; Kb = '5066901'; Installed = 12; Needed = 19; Failed = 1; Age = 6 }
         @{ Update = '2026-10 Servicing Stack Update for Windows Server 2022'; Kb = '5066840'; Installed = 3; Needed = 3; Failed = 0; Age = 2 }
     )
+    $promoted = @(Get-FakeRingApproval)
     foreach ($c in $candidates) {
+        # Like the real Approve-WsusRing: an update already approved for every ring is no candidate.
+        if ($c.Kb -in $promoted) {
+            continue
+        }
         $percent = [int] [math]::Floor(100 * $c.Installed / $c.Needed)
         $reasons = @(
             if ($c.Age -lt $MinimumSoakDays) { 'approved for Pilot on {0:yyyy-MM-dd}, soak not finished' -f (Get-Date).AddDays(-$c.Age) }
@@ -58,9 +80,8 @@ function Approve-WsusRing {
         $gate = if (-not $reasons) { 'Passed' } elseif ($Force) { 'Forced' } else { 'Held' }
         $approvedTo = @()
         if ($gate -ne 'Held' -and $PSCmdlet.ShouldProcess($c.Update, 'Approve')) {
-            # Stateless on purpose: Pode runs requests in several runspaces, each with its own copy of
-            # this module, so remembered approvals would show differently from page to page.
             $approvedTo = 'Workstations', 'Servers'
+            Add-FakeRingApproval -Kb $c.Kb
         }
         [PSCustomObject] @{
             PSTypeName = 'WSUS.RingApproval'
@@ -85,7 +106,7 @@ function Deny-WsusUpdate {
         $number = $article -replace '^KB', ''
         foreach ($arch in 'x64', 'arm64') {
             $title = "2026-10 Security Update for Microsoft Edge ($arch)"
-            # Stateless, like Approve-WsusRing above: every decline succeeds, in every runspace.
+            # Stateless: every decline succeeds, in every runspace.
             $action = 'Declined'
             if ($action -eq 'Declined') {
                 if (-not $PSCmdlet.ShouldProcess($title, 'Decline update')) { continue }

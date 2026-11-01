@@ -42,4 +42,6 @@ All notable changes to this project are documented here. The format follows
   (`public/portcullis.css`); wide tables scroll sideways.
 - Pode 2.14.1 and Pode.Web 1.0.0 pinned as `RequiredModules` in the Portcullis manifest.
 - Windows Authentication through IIS, limited to an AD group; a localhost-only mode without sign-in for
-  development, with fake WSUS data (`dev/Start-DevServer.ps1`).
+  development, with fake WSUS data (`dev/Start-DevServer.ps1`). The fake WSUS remembers ring
+  approvals until the dev server stops, so an approved update is gone from the next preview, as on a
+  real upstream.
