@@ -30,7 +30,8 @@ All notable changes to this project are documented here. The format follows
 - After an approval, the Preview on Promote rings keeps only the updates still pending
   (`Select-PortcullisPendingRow`); Last approval lists only the updates actually approved, and a run
   that approves nothing leaves the previous Last approval in place.
-- Table control rows (refresh, page size) sit below the table instead of against its edge, and the
+- Table control rows (refresh, page size, page links) sit below the table, all 2rem tall, with refresh
+  flush with the table's left edge and the page controls flush with its right edge; the
   open sidebar has a fixed width so page names fit on narrow windows.
 - Promote rings keeps the last approval (who, when, what) in the session and shows it again when
   the page is reopened.

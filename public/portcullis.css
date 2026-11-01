@@ -811,8 +811,48 @@ body[pode-theme] div[role='table'] nav[role='pagination'] .pagination {
 }
 
 body[pode-theme] div[role='table'] nav[role='pagination'] input.page-size {
+    /* Pode.Web gives it a right margin, which floated it in from the table's edge. */
+    margin: 0 !important;
     width: 4.5rem;
     height: 2rem;
     padding: 0.25rem 0.5rem;
     font-size: 0.85rem;
+}
+
+/* The control row's boxes line up with the table's edges: refresh flush left, page size (and page
+   links, when there is more than one page) flush right. Pode.Web leaves an empty page-links list
+   after the page-size box, which pushed the box in from the right edge. */
+body[pode-theme] div[role='table'] nav[role='pagination'] ul.pagination:empty {
+    display: none;
+}
+
+/* Refresh as a bordered box the same height as the page-size box, so its edge (not just its icon)
+   sits on the table's left edge. */
+body[pode-theme] div[role='table'] > div[role='controls'] .pode-table-refresh {
+    width: 2rem;
+    height: 2rem;
+    padding: 0 !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--pc-border-strong) !important;
+    border-radius: var(--pc-radius-sm) !important;
+}
+
+body[pode-theme] div[role='table'] > div[role='controls'] .pode-table-refresh .mdi::before {
+    font-size: 1rem !important;
+    position: static !important;
+    top: auto !important;
+}
+
+/* Page links match the 2rem height of the refresh and page-size boxes, so the row lines up. */
+body[pode-theme] div[role='table'] nav[role='pagination'] .page-link {
+    height: 2rem;
+    min-width: 2rem;
+    padding: 0 0.6rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    line-height: 1;
 }
