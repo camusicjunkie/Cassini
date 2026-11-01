@@ -8,7 +8,8 @@ function Write-PortcullisAudit {
 
         Writes one JSON line to the AuditLogPath file (creating its folder), and, when the event
         source 'Portcullis' is registered (see README), an Application event: ID 1000 for a change
-        that succeeded, 1001 for one that failed. A failure to write the event is a warning; a
+        that succeeded, 1001 for one that failed. With AuditEventLog = 'Required' the server does not
+        start without the source (Assert-PortcullisAuditSource). A failure to write the event is a warning; a
         failure to write the file throws, because a change must not go unrecorded.
     #>
     [CmdletBinding()]
@@ -55,7 +56,7 @@ function Write-PortcullisAudit {
     Add-Content -LiteralPath $Config.AuditLogPath -Value $line -Encoding UTF8
 
     try {
-        if ([Diagnostics.EventLog]::SourceExists('Portcullis')) {
+        if (Test-PortcullisEventSource) {
             $eventId = if ($Outcome -eq 'Succeeded') { 1000 } else { 1001 }
             $type = if ($Outcome -eq 'Succeeded') { 'Information' } else { 'Error' }
             [Diagnostics.EventLog]::WriteEntry('Portcullis', $line, $type, $eventId)

@@ -28,11 +28,13 @@ Install-Module Pode.Web -RequiredVersion 1.0.0-preview3 -AllowPrerelease -Reposi
 
 ## 2. Service account
 
-Create a gMSA (for example `gmsa-portcullis$`), allow the host to retrieve its password, and add it to
-`res.srv.wsus.admin`. That gives it WSUS administrator rights on both nodes. It also needs:
+Create a gMSA (for example `gmsa-portcullis$`) and allow only the portal server to retrieve its password.
+Give it WSUS administrator rights on both nodes through its own group, not `AdminGroup`: the people who
+sign in and the account that acts on WSUS stay separate ([security.md](security.md), step 2).
 
-- Read and execute on the site folder (including `config\`; it never writes there).
-- Modify on the audit log folder (`C:\ProgramData\Portcullis` by default) and on `logs\` in the site folder.
+Folder permissions ([security.md](security.md), step 7): read and execute on the site folder (including
+`config\`; it never writes there), modify on `logs\` in the site folder, and write without delete on the
+audit log folder (`C:\ProgramData\Portcullis` by default).
 
 ## 3. Site
 
@@ -41,11 +43,12 @@ Create a gMSA (for example `gmsa-portcullis$`), allow the host to retrieve its p
 2. Copy `config\portcullis.example.psd1` to `config\portcullis.psd1` and edit it.
 3. Create an app pool: **No Managed Code**, identity `CORP\gmsa-portcullis$`, Start Mode AlwaysRunning,
    Idle Time-out 0 (so the first request after a quiet night doesn't wait for PowerShell to start).
-4. Create the site on that pool, HTTPS only, with a certificate trusted by the admins' browsers.
+4. Create the site on that pool, HTTPS only: certificate, binding and the Kerberos settings are in
+   [security.md](security.md), steps 3 to 6.
 5. In Authentication: **Windows Authentication** on, **Anonymous** off (web.config sets both; IIS
    must allow the override, or set it in the IIS manager).
 
-## 4. Event log source (optional, for Splunk)
+## 4. Event log source (required)
 
 Once, elevated:
 
@@ -53,14 +56,19 @@ Once, elevated:
 New-EventLog -LogName Application -Source Portcullis
 ```
 
-Without it the audit file is still written. With it, each change is also an Application event (1000
-succeeded, 1001 failed) for the existing Cribl Edge/Splunk forwarding.
+Each change is then also an Application event (1000 succeeded, 1001 failed) for the Cribl Edge/Splunk
+forwarding. That copy is the one the portal's account cannot rewrite, so under IIS the portal refuses to
+start without the source (`AuditEventLog = 'Required'`, the default). Forwarding and alerts:
+[security.md](security.md), step 8.
 
 ## 5. Check it
 
 - Browse to the site as a member of the admin group: the Status page shows both nodes.
 - Browse as a non-member: refused, with the message naming the admin group.
-- Start a sync on the replica, then open the Audit page: the entry shows your name, not the gMSA.
+- Start a sync on the replica, then open the Audit page: the entry shows your name, not the gMSA. The
+  Application log has the matching event 1000.
+- The response headers include `Content-Security-Policy` and `Strict-Transport-Security`, and no
+  `Access-Control-Allow-Origin`.
 - If the site doesn't start, read `logs\stdout_*.log` in the site folder and Pode's error log in `logs\`.
 
 ## Request time-outs

@@ -17,6 +17,11 @@
     in. Authentication = None in the configuration is for local development: it refuses to start
     under IIS, and listens on localhost only.
 
+    Security controls set here (docs/security.md): POSTs from other sites are refused, the session
+    cookie is Secure, HttpOnly and SameSite=Strict with an idle time-out of SessionMinutes, every
+    response carries a Content-Security-Policy and other security headers, and with
+    AuditEventLog = 'Required' the server does not start without the audit event source.
+
     The logic lives in the Portcullis module (src/Portcullis); this file is only the web layout.
 
 .EXAMPLE
@@ -36,6 +41,7 @@ $portcullisManifest = Join-Path -Path $PSScriptRoot -ChildPath 'src\Portcullis\P
 Import-Module -Name WSUS
 Import-Module -Name $portcullisManifest -Force
 $config = Get-PortcullisConfig -Path $ConfigPath
+Assert-PortcullisAuditSource -Config $config
 
 Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
     # Route and element scriptblocks run in their own runspaces: give them the modules and config.
@@ -51,8 +57,43 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
     # Under IIS, Pode replaces this endpoint with the one IIS assigns.
     Add-PodeEndpoint -Address localhost -Port $config.ListenPort -Protocol Http
 
-    Enable-PodeSessionMiddleware -Duration 1800 -Extend
-    Initialize-PodeWebTemplates -Title $config.Title -Theme Auto -NoPageFilter
+    # Idle time-out, renewed on each request. Secure: browsers send the cookie over HTTPS only (and to
+    # http://localhost for development). HttpOnly: page scripts cannot read it. Strict: the session is
+    # also bound to the browser's user agent. Pode cannot set SameSite on this cookie; see
+    # docs/security.md for the IIS rule that adds it.
+    Enable-PodeSessionMiddleware -Duration ($config.SessionMinutes * 60) -Extend -Secure -HttpOnly -Strict
+
+    # Windows Authentication signs in any request the browser sends, including one another page
+    # triggers. Refuse POSTs that the browser marks as coming from another site (CSRF).
+    Add-PodeMiddleware -Name 'PortcullisSameOrigin' -ScriptBlock {
+        $check = Test-PortcullisRequestOrigin -Method $WebEvent.Method -FetchSite (Get-PodeHeader -Name 'Sec-Fetch-Site') `
+            -Origin (Get-PodeHeader -Name 'Origin') -HostHeader (Get-PodeHeader -Name 'Host')
+        if ($check.Allowed) {
+            return $true
+        }
+        Write-PodeErrorLog -Message "Refused $($WebEvent.Method) $($WebEvent.Path): $($check.Reason)"
+        Set-PodeResponseStatus -Code 403 -Description 'Requests from other sites are refused.' -NoErrorPage
+        return $false
+    }
+
+    Initialize-PodeWebTemplates -Title $config.Title -Theme Auto -NoPageFilter -Security None
+
+    # Security headers on every response, set after Pode.Web (started with -Security None, whose
+    # presets allow any origin for CORS and inline scripts). All scripts are files served by the
+    # portal, so scripts are 'self' only; Pode.Web sets inline style attributes, so styles allow
+    # 'unsafe-inline'. No CORS headers: only the portal's own pages call it.
+    Set-PodeSecurityContentSecurityPolicy -Default 'self' -Scripts 'self' -Style 'self', 'unsafe-inline' `
+        -Image 'self', 'data' -Font 'self', 'data' -Connect 'self' -Object 'none' -BaseUri 'self' `
+        -FormAction 'self' -FrameAncestor 'none'
+    Set-PodeSecurityFrameOptions -Type Deny
+    Set-PodeSecurityContentTypeOptions
+    Set-PodeSecurityReferrerPolicy -Type 'No-Referrer'
+    Set-PodeSecurityCrossOrigin -Open 'Same-Origin' -Resource 'Same-Origin'
+    Set-PodeSecurityPermissionsPolicy -Camera 'none' -Microphone 'none' -Geolocation 'none' -Payment 'none' -Usb 'none'
+    # Browsers only act on HSTS over HTTPS, so it is harmless on http://localhost.
+    Set-PodeSecurityStrictTransportSecurity -Duration 31536000
+    Hide-PodeSecurityServer
+
     # Layout fixes (whole words in table cells, spaced buttons, hamburger and icon rail for the
     # collapsed sidebar) and page-name tooltips for that rail.
     # The file's hash goes in the URL, so browsers fetch the new file after an upgrade instead of

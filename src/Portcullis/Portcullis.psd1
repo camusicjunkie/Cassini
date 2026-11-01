@@ -22,6 +22,7 @@
 
     # Hand-listed: must match the files in Public/ (checked by tests/Module.Tests.ps1).
     FunctionsToExport    = @(
+        'Assert-PortcullisAuditSource'
         'Find-PortcullisUpdate'
         'Get-PortcullisAuditLog'
         'Get-PortcullisConfig'
@@ -33,6 +34,7 @@
         'New-PortcullisPreview'
         'Resolve-PortcullisUser'
         'Select-PortcullisPendingRow'
+        'Test-PortcullisRequestOrigin'
     )
     CmdletsToExport      = @()
     VariablesToExport    = @()

@@ -15,6 +15,10 @@ function Get-PortcullisConfig {
           ListenPort            8080                  (ignored under IIS, which assigns the port)
           AuditLogPath          'C:\ProgramData\Portcullis\audit.log'
           PreviewMaxAgeMinutes  15                    (how long a preview can be confirmed)
+          SessionMinutes        15                    (sign-in session idle time-out, 5 to 480)
+          AuditEventLog         'Required' under IIS, 'Optional' with Authentication None
+                                (Required: the server refuses to start without the 'Portcullis'
+                                event source, so every change also reaches the Event Log)
           Title                 'Portcullis'
     .EXAMPLE
         $config = Get-PortcullisConfig -Path .\config\portcullis.psd1
@@ -43,6 +47,8 @@ function Get-PortcullisConfig {
         ListenPort           = 8080
         AuditLogPath         = 'C:\ProgramData\Portcullis\audit.log'
         PreviewMaxAgeMinutes = 15
+        SessionMinutes       = 15
+        AuditEventLog        = $null
         Title                = 'Portcullis'
     }
 
@@ -78,6 +84,17 @@ function Get-PortcullisConfig {
         throw "PreviewMaxAgeMinutes must be 1 to 120, not '$($config.PreviewMaxAgeMinutes)'."
     }
     $config.PreviewMaxAgeMinutes = [int] $config.PreviewMaxAgeMinutes
+    if (($config.SessionMinutes -as [int]) -notin 5..480) {
+        throw "SessionMinutes must be 5 to 480, not '$($config.SessionMinutes)'."
+    }
+    $config.SessionMinutes = [int] $config.SessionMinutes
+
+    if (-not $config.AuditEventLog) {
+        $config.AuditEventLog = if ($config.Authentication -eq 'IIS') { 'Required' } else { 'Optional' }
+    }
+    if ($config.AuditEventLog -notin 'Required', 'Optional') {
+        throw "AuditEventLog must be 'Required' or 'Optional', not '$($config.AuditEventLog)'."
+    }
 
     [PSCustomObject] $config
 }

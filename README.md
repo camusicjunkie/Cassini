@@ -25,8 +25,8 @@ locally on a node, and need a person watching.
    in the preview, never with values from the browser, and refuses if the id doesn't match, the preview is
    of the other kind, or it's older than `PreviewMaxAgeMinutes` (15). Each preview can be confirmed once.
 3. **Audit.** The user, action, node, settings and outcome go to the audit log (a JSON line per change)
-   and, if the event source is registered, to the Application event log (ID 1000 success, 1001 failure)
-   for Cribl and Splunk. Failures are recorded too.
+   and to the Application event log (ID 1000 success, 1001 failure) for Cribl and Splunk. Under IIS
+   the portal doesn't start without the event source. Failures are recorded too.
 
 `Approve-WsusRing` checks the gate again on confirm, so the result can differ slightly from the preview if
 Pilot installs changed in between. The result table shows what was actually approved.
@@ -38,7 +38,9 @@ Pilot installs changed in between. The result table shows what was actually appr
 - Changes run as the **portal's service account** (the IIS app pool identity), not as the signed-in
   user: passing a user's Kerberos ticket on to the WSUS nodes would need constrained delegation. WSUS
   therefore sees only that account, and the audit log is what ties each change to a person. Use a gMSA and
-  give it WSUS administrator rights on both nodes (add it to `res.srv.wsus.admin`).
+  give it WSUS administrator rights on both nodes through its own group, separate from `AdminGroup`.
+- Threats, controls and the hardening plan for the server, the account and the logs:
+  [docs/security.md](docs/security.md).
 
 ## Requirements
 

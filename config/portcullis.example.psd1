@@ -26,6 +26,14 @@
     # How long a preview can still be confirmed.
     PreviewMaxAgeMinutes = 15
 
+    # Sign-in session idle time-out (5 to 480).
+    SessionMinutes       = 15
+
+    # Required: refuse to start unless the 'Portcullis' Application event source exists, so every
+    # change also reaches the Event Log (and Splunk), where the portal's account cannot rewrite it.
+    # Default Required under IIS, Optional with Authentication = None.
+    AuditEventLog        = 'Required'
+
     # Shown in the browser tab and the top bar.
     Title                = 'Portcullis'
 }

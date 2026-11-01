@@ -19,6 +19,16 @@ Describe 'Get-PortcullisConfig' {
         $config.AdminGroup | Should -Be 'res.srv.wsus.admin'
         $config.Authentication | Should -Be 'IIS'
         $config.PreviewMaxAgeMinutes | Should -Be 15
+        $config.SessionMinutes | Should -Be 15
+        $config.AuditEventLog | Should -Be 'Required'
+    }
+
+    It 'makes the audit event optional by default only without sign-in' {
+        $config = Get-PortcullisConfig -Path (Write-Config "@{ UpstreamServer = 'wsus01'; Authentication = 'None' }")
+        $config.AuditEventLog | Should -Be 'Optional'
+
+        $config = Get-PortcullisConfig -Path (Write-Config "@{ UpstreamServer = 'wsus01'; AuditEventLog = 'Optional' }")
+        $config.AuditEventLog | Should -Be 'Optional'
     }
 
     It 'keeps values from the file' {
@@ -42,6 +52,8 @@ Describe 'Get-PortcullisConfig' {
         @{ Case = 'IIS without an admin group'; Body = "@{ UpstreamServer = 'wsus01'; AdminGroup = '' }"; Message = '*AdminGroup is required*' }
         @{ Case = 'a bad port'; Body = "@{ UpstreamServer = 'wsus01'; Port = 70000 }"; Message = '*Port must be a port number*' }
         @{ Case = 'a bad preview age'; Body = "@{ UpstreamServer = 'wsus01'; PreviewMaxAgeMinutes = 0 }"; Message = '*PreviewMaxAgeMinutes*' }
+        @{ Case = 'a bad session time-out'; Body = "@{ UpstreamServer = 'wsus01'; SessionMinutes = 1 }"; Message = '*SessionMinutes must be 5 to 480*' }
+        @{ Case = 'a bad audit event setting'; Body = "@{ UpstreamServer = 'wsus01'; AuditEventLog = 'Sometimes' }"; Message = "*'Required' or 'Optional'*" }
     ) {
         { Get-PortcullisConfig -Path (Write-Config $Body) } | Should -Throw $Message
     }

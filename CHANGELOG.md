@@ -8,6 +8,15 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Security ([docs/security.md](docs/security.md)): POSTs sent from another site are refused with 403
+  and logged (`Test-PortcullisRequestOrigin`); the session cookie is `Secure` and `HttpOnly` with an
+  idle time-out of `SessionMinutes` (default 15); every response has a Content-Security-Policy
+  (scripts from the portal only), frame, content-type, referrer, cross-origin, permissions and HSTS
+  headers, and no CORS headers (Pode.Web's preset allowed any origin); `web.config` drops the
+  `Server` and `X-Powered-By` headers and allows only GET, HEAD and POST up to 1 MB.
+- `AuditEventLog` (default `Required` under IIS): the server refuses to start without the
+  `Portcullis` event source (`Assert-PortcullisAuditSource`), so every change also reaches the Event
+  Log.
 - Status page: both WSUS nodes from `Get-WsusNodeStatus`, refreshed every minute, with notes for an
   unreachable node, a role that differs from the configuration, and a replica behind the upstream.
   Start a sync on either node. A refresh swaps the rows in place: the table keeps its rows and
