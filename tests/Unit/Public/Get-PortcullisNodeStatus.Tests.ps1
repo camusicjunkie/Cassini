@@ -41,7 +41,7 @@ Describe 'Get-PortcullisNodeStatus' {
         $rows[0].LastSync | Should -Be '2026-10-30 02:00'
         $rows[0].Sync | Should -Be 'Idle'
         $rows[1].Node | Should -Be 'Replica'
-        $rows | ForEach-Object { $_.Note | Should -BeNullOrEmpty }
+        $rows | ForEach-Object { $_.Note | Should -BeExactly '' }
         Should -Invoke -ModuleName Portcullis Get-WsusNodeStatus -Times 2 -Exactly -ParameterFilter { $Port -eq 8531 }
     }
 
@@ -68,6 +68,10 @@ Describe 'Get-PortcullisNodeStatus' {
         $rows.Count | Should -Be 2
         $rows[1].Reachable | Should -BeFalse
         $rows[1].Note | Should -BeLike 'Unreachable: Cannot connect to wsus02*'
+        # Blank cells, not $null: the web table renders $null as 'undefined'.
+        @($rows[1].PSObject.Properties | Where-Object { $null -eq $_.Value }).Name | Should -BeNullOrEmpty
+        $rows[1].Role | Should -BeExactly ''
+        $rows[1].Updates | Should -BeExactly ''
     }
 
     It 'shows sync progress while a sync runs' {

@@ -13,6 +13,7 @@ function Get-PortcullisNodeStatus {
         minutes after an upstream sync or approval).
 
         Content disk and log facts are $null for a remote node, so they are left out of the row.
+        Empty values are '' rather than $null, so the web table shows a blank cell.
     .EXAMPLE
         Get-PortcullisNodeStatus -Config $config | Format-Table
     .OUTPUTS
@@ -37,16 +38,16 @@ function Get-PortcullisNodeStatus {
             Node              = $node.Name
             Server            = $node.Server
             Reachable         = [bool] $status
-            Role              = $null
-            Sync              = $null
-            LastSync          = $null
-            LastSyncResult    = $null
-            Updates           = $null
-            Approved          = $null
-            Declined          = $null
-            DownloadPendingMB = $null
-            DownloadFailed    = $null
-            Note              = $null
+            Role              = ''
+            Sync              = ''
+            LastSync          = ''
+            LastSyncResult    = ''
+            Updates           = ''
+            Approved          = ''
+            Declined          = ''
+            DownloadPendingMB = ''
+            DownloadFailed    = ''
+            Note              = ''
         }
 
         if (-not $status) {
@@ -62,8 +63,8 @@ function Get-PortcullisNodeStatus {
         else {
             'Idle'
         }
-        $row.LastSync = Format-PortcullisTime -Value $status.LastSyncTime
-        $row.LastSyncResult = if ($status.LastSyncError) { "$($status.LastSyncResult): $($status.LastSyncError)" } else { $status.LastSyncResult }
+        $row.LastSync = "$(Format-PortcullisTime -Value $status.LastSyncTime)"
+        $row.LastSyncResult = if ($status.LastSyncError) { "$($status.LastSyncResult): $($status.LastSyncError)" } else { "$($status.LastSyncResult)" }
         $row.Updates = $status.UpdateCount
         $row.Approved = $status.ApprovedUpdateCount
         $row.Declined = $status.DeclinedUpdateCount

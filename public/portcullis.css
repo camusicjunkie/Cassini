@@ -1,0 +1,26 @@
+/* Portcullis overrides for Pode.Web (served from public/ by Pode). */
+
+/* Pode.Web sets word-break: break-word on every cell, which splits short values such as
+   "Upstream" or "Passed" across lines in narrow columns. Keep words whole; tables sit in a
+   .table-responsive wrapper, so a wide table scrolls sideways instead. */
+table tbody td {
+    word-break: normal;
+}
+
+/* Long values without spaces (audit JSON) may still wrap anywhere. */
+table tbody td[pode-column='Detail'] {
+    word-break: break-word;
+    min-width: 20rem;
+}
+
+/* Short identifiers never wrap. */
+table tbody td[pode-column='Node'],
+table tbody td[pode-column='Server'],
+table tbody td[pode-column='Role'],
+table tbody td[pode-column='Kb'],
+table tbody td[pode-column='Gate'],
+table tbody td[pode-column='Time'],
+table tbody td[pode-column='LastSync'],
+table tbody td[pode-column='Arrived'] {
+    white-space: nowrap;
+}

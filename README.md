@@ -87,6 +87,7 @@ server.ps1                  the Pode.Web pages: layout and wiring only
 server.psd1                 Pode settings (request timeout)
 web.config                  IIS hosting
 config/                     portcullis.example.psd1 (copy to portcullis.psd1)
+public/                     static files Pode serves (portcullis.css)
 src/Portcullis/             the logic as a module (requires Pode and Pode.Web; it never calls them), unit-tested
   Public/                   one exported function per file
   Private/                  shared helpers (preview checks, audit writer, formatting)

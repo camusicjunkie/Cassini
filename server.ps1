@@ -53,6 +53,8 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
 
     Enable-PodeSessionMiddleware -Duration 1800 -Extend
     Initialize-PodeWebTemplates -Title $config.Title -Theme Auto -NoPageFilter
+    # Pode.Web breaks table cells mid-word; keep words whole and let wide tables scroll instead.
+    Import-PodeWebStylesheet -Url '/portcullis.css'
 
     if ($config.Authentication -eq 'IIS') {
         # Windows Authentication in IIS; nested AD membership counts.
@@ -64,7 +66,12 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
     Add-PodeWebPage -Name 'Status' -Path '/' -Icon 'server' -HomePage -Index 0 -Content @(
         New-PodeWebCard -Name 'Nodes' -Content @(
             New-PodeWebParagraph -Value 'Facts from Get-WsusNodeStatus, refreshed every minute. Disk and log facts are only available on the node itself, so they are not shown here.'
-            New-PodeWebTable -Name 'NodeStatus' -DisplayName 'Nodes' -Compact -AutoRefresh -RefreshInterval 60 -NoExport -ScriptBlock {
+            New-PodeWebTable -Name 'NodeStatus' -DisplayName 'Nodes' -Compact -AutoRefresh -RefreshInterval 60 -NoExport -Columns @(
+                Initialize-PodeWebTableColumn -Key 'LastSync' -Name 'Last sync'
+                Initialize-PodeWebTableColumn -Key 'LastSyncResult' -Name 'Last sync result'
+                Initialize-PodeWebTableColumn -Key 'DownloadPendingMB' -Name 'To download (MB)'
+                Initialize-PodeWebTableColumn -Key 'DownloadFailed' -Name 'Download failures'
+            ) -ScriptBlock {
                 Get-PortcullisNodeStatus -Config (Get-PodeState -Name 'Config') |
                     Select-Object -Property Node, Server, Role, Sync, LastSync, LastSyncResult, Updates, Approved, Declined, DownloadPendingMB, DownloadFailed, Note
             }
@@ -139,7 +146,12 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
         )
         New-PodeWebCard -Name 'Preview' -Content @(
             New-PodeWebText -Id 'ring_summary' -Value 'Run a preview to see the gate.'
-            New-PodeWebTable -Name 'RingPreview' -DisplayName 'Gate' -Compact -NoExport
+            New-PodeWebTable -Name 'RingPreview' -DisplayName 'Gate' -Compact -NoExport -Columns @(
+                Initialize-PodeWebTableColumn -Key 'Kb' -Name 'KB'
+                Initialize-PodeWebTableColumn -Key 'Installed' -Name 'Installed in Pilot'
+                Initialize-PodeWebTableColumn -Key 'Failed' -Name 'Failed in Pilot'
+                Initialize-PodeWebTableColumn -Key 'OnConfirm' -Name 'On confirm'
+            )
             New-PodeWebButton -Name 'ApproveRing' -DisplayName 'Approve what passed' -Icon 'check-decagram' -Colour Green -Disabled -ScriptBlock {
                 $preview = $WebEvent.Session.Data.RingPreview
                 $id = if ($preview -and $preview.Kind -eq 'Ring') { $preview.Id } else { '' }
@@ -147,7 +159,10 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
             }
         )
         New-PodeWebCard -Name 'Result' -Content @(
-            New-PodeWebTable -Name 'RingResult' -DisplayName 'What was approved' -Compact
+            New-PodeWebTable -Name 'RingResult' -DisplayName 'What was approved' -Compact -Columns @(
+                Initialize-PodeWebTableColumn -Key 'Kb' -Name 'KB'
+                Initialize-PodeWebTableColumn -Key 'ApprovedTo' -Name 'Approved for'
+            )
         )
         New-PodeWebModal -Name 'ConfirmRing' -DisplayName 'Approve updates' -SubmitText 'Approve' -Content @(
             New-PodeWebText -Value 'Approve the updates that passed in the preview for the next rings? The gate is checked again now, so the result can differ slightly from the preview. Workstations install Wednesday and Servers Thursday, per the client GPO schedule.'
@@ -205,7 +220,10 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
         )
         New-PodeWebCard -Name 'Matches' -Content @(
             New-PodeWebText -Id 'kb_summary' -Value 'Look up a KB to see what would be declined.'
-            New-PodeWebTable -Name 'KbMatches' -DisplayName 'Matching updates' -Compact -NoExport
+            New-PodeWebTable -Name 'KbMatches' -DisplayName 'Matching updates' -Compact -NoExport -Columns @(
+                Initialize-PodeWebTableColumn -Key 'Kb' -Name 'KB'
+                Initialize-PodeWebTableColumn -Key 'OnConfirm' -Name 'On confirm'
+            )
             New-PodeWebButton -Name 'DeclineKb' -DisplayName 'Decline' -Icon 'cancel' -Colour Red -Disabled -ScriptBlock {
                 $preview = $WebEvent.Session.Data.DeclinePreview
                 $id = if ($preview -and $preview.Kind -eq 'Decline') { $preview.Id } else { '' }
@@ -216,7 +234,11 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
             }
         )
         New-PodeWebCard -Name 'Declined' -Content @(
-            New-PodeWebTable -Name 'DeclineResult' -DisplayName 'What was declined' -Compact
+            New-PodeWebTable -Name 'DeclineResult' -DisplayName 'What was declined' -Compact -Columns @(
+                Initialize-PodeWebTableColumn -Key 'Kb' -Name 'KB'
+                Initialize-PodeWebTableColumn -Key 'Action' -Name 'Result'
+                Initialize-PodeWebTableColumn -Key 'NextStep' -Name 'Next step'
+            )
         )
         New-PodeWebModal -Name 'ConfirmDecline' -DisplayName 'Decline update' -SubmitText 'Decline' -Content @(
             New-PodeWebText -Value 'Decline every update for '

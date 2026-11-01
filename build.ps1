@@ -11,7 +11,7 @@
       All      Analyze, then Test.
       Release  Checks a release is ready (manifest version equals the vX.Y.Z tag on HEAD, CHANGELOG has
                a section for it, working tree clean) and stages the deployable site (server.ps1, server.psd1,
-               web.config, config/portcullis.example.psd1, src/Portcullis) to artifacts/stage/Portcullis.
+               web.config, config/portcullis.example.psd1, public, src/Portcullis) to artifacts/stage/Portcullis.
                It never deploys; deployment is manual (docs/hosting-iis.md).
 
     Pester and PSScriptAnalyzer versions are pinned below and installed for the current user if missing.
@@ -136,6 +136,7 @@ function Invoke-Release {
     }
     Copy-Item -Path (Join-Path $repoRoot 'config\portcullis.example.psd1') -Destination (Join-Path $stage 'config')
     Copy-Item -Path (Join-Path $modulePath '*') -Destination (Join-Path $stage 'src\Portcullis') -Recurse
+    Copy-Item -Path (Join-Path $repoRoot 'public') -Destination $stage -Recurse
 
     $notes = $section.Groups['body'].Value.Trim() + "`n`nFull changelog: https://github.com/camusicjunkie/Portcullis/blob/$tag/CHANGELOG.md"
     Update-ModuleManifest -Path (Join-Path $stage 'src\Portcullis\Portcullis.psd1') -ReleaseNotes $notes
