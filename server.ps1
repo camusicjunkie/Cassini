@@ -53,8 +53,10 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
 
     Enable-PodeSessionMiddleware -Duration 1800 -Extend
     Initialize-PodeWebTemplates -Title $config.Title -Theme Auto -NoPageFilter
-    # Pode.Web breaks table cells mid-word; keep words whole and let wide tables scroll instead.
+    # Layout fixes (whole words in table cells, spaced buttons, hamburger and icon rail for the
+    # collapsed sidebar) and page-name tooltips for that rail.
     Import-PodeWebStylesheet -Url '/portcullis.css'
+    Import-PodeWebJavaScript -Url '/portcullis.js'
 
     if ($config.Authentication -eq 'IIS') {
         # Windows Authentication in IIS; nested AD membership counts.
@@ -73,7 +75,7 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
                 Initialize-PodeWebTableColumn -Key 'DownloadFailed' -Name 'Download failures'
             ) -ScriptBlock {
                 Get-PortcullisNodeStatus -Config (Get-PodeState -Name 'Config') |
-                    Select-Object -Property Node, Server, Role, Sync, LastSync, LastSyncResult, Updates, Approved, Declined, DownloadPendingMB, DownloadFailed, Note
+                    Select-Object -Property Node, Server, Sync, LastSync, LastSyncResult, Updates, Approved, Declined, DownloadPendingMB, DownloadFailed, Note
             }
         )
         New-PodeWebCard -Name 'Sync' -Content @(
@@ -138,7 +140,7 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
 
                 $WebEvent.Session.Data.RingPreview = $result.Preview
                 $summary = $result.Summary
-                $text = '{0} candidate update(s): {1} would be approved ({2} forced), {3} held.' -f $summary.Candidates, $summary.Approvable, $summary.Forced, $summary.Held
+                $text = 'Candidates: {0}. Would be approved: {1} ({2} forced). Held: {3}.' -f $summary.Candidates, $summary.Approvable, $summary.Forced, $summary.Held
                 Update-PodeWebText -Id 'ring_summary' -Value $text
                 Update-PodeWebTable -Name 'RingPreview' -Data $result.Rows
                 if ($summary.Approvable -gt 0) { Enable-PodeWebButton -Name 'ApproveRing' } else { Disable-PodeWebButton -Name 'ApproveRing' }
@@ -172,7 +174,7 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
                 $rows = Invoke-PortcullisRingApproval -Config (Get-PodeState -Name 'Config') -Preview $WebEvent.Session.Data.RingPreview -PreviewId $WebEvent.Data.Value -User $user -Confirm:$false
                 $approved = @($rows | Where-Object ApprovedTo).Count
                 Update-PodeWebTable -Name 'RingResult' -Data @($rows)
-                Show-PodeWebToast -Title 'Rings' -Message "$approved update(s) approved. The replica copies them on its next sync."
+                Show-PodeWebToast -Title 'Rings' -Message "Approved $approved update(s). The replica copies them on its next sync."
             }
             catch {
                 Show-PodeWebToast -Title 'Approval not run' -Message $_.Exception.Message -Duration 15000
@@ -250,7 +252,7 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
                 $rows = Invoke-PortcullisDecline -Config (Get-PodeState -Name 'Config') -Preview $WebEvent.Session.Data.DeclinePreview -PreviewId $WebEvent.Data.Value -User $user -Confirm:$false
                 Update-PodeWebTable -Name 'DeclineResult' -Data @($rows | Select-Object -Property Kb, Update, Action, NextStep)
                 $declined = @($rows | Where-Object Action -eq 'Declined').Count
-                Show-PodeWebToast -Title 'Decline' -Message "$declined update(s) declined."
+                Show-PodeWebToast -Title 'Decline' -Message "Declined $declined update(s)."
             }
             catch {
                 Show-PodeWebToast -Title 'Decline not run' -Message $_.Exception.Message -Duration 15000

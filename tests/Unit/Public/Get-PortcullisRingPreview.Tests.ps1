@@ -28,7 +28,7 @@ Describe 'Get-PortcullisRingPreview' {
         $rows[0].Installed | Should -Be '18 of 19 (94%)'
         $rows[0].OnConfirm | Should -Be 'Approve'
         $rows[1].Kb | Should -Be 'KB5002, KB5003'
-        $rows[1].Reason | Should -Be 'only 26% installed in Pilot; 1 failed in Pilot'
+        $rows[1].Reason | Should -BeExactly 'Only 26% installed in Pilot; 1 failed in Pilot'
         $rows[1].OnConfirm | Should -Be 'Hold'
     }
 

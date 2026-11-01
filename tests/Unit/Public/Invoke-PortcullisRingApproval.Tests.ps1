@@ -25,7 +25,7 @@ Describe 'Invoke-PortcullisRingApproval' {
 
         $rows[0].Kb | Should -Be 'KB5001'
         $rows[0].ApprovedTo | Should -Be 'Workstations, Servers'
-        $rows[0].Reason | Should -Be 'soak not finished'
+        $rows[0].Reason | Should -BeExactly 'Soak not finished'
         $rows[1].ApprovedTo | Should -Be ''
     }
 

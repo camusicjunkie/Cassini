@@ -66,7 +66,7 @@ function Invoke-PortcullisRingApproval {
             Update     = $row.Update
             Gate       = $row.Gate
             ApprovedTo = @($row.ApprovedTo) -join ', '
-            Reason     = @($row.Reason) -join '; '
+            Reason     = ConvertTo-PortcullisSentence -Text (@($row.Reason) -join '; ')
         }
     }
 

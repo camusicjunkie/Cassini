@@ -7,7 +7,7 @@ function Get-PortcullisRingPreview {
         plus a preview record (New-PortcullisPreview) that Invoke-PortcullisRingApproval needs to
         confirm exactly these settings.
 
-        Rows are flattened for the web table: Reason is one string, and OnConfirm says whether the
+        Rows are flattened for the web table: Reason is one sentence, and OnConfirm says whether the
         update would be approved (for the target rings that don't have it yet) or held. Approve-WsusRing's
         "held" warning is not repeated; the Summary counts them.
     .EXAMPLE
@@ -52,7 +52,7 @@ function Get-PortcullisRingPreview {
                 Gate       = $row.Gate
                 Installed  = '{0} of {1} ({2}%)' -f $row.Installed, $row.Needed, $row.Percent
                 Failed     = $row.Failed
-                Reason     = @($row.Reason) -join '; '
+                Reason     = ConvertTo-PortcullisSentence -Text (@($row.Reason) -join '; ')
                 OnConfirm  = if ($row.Gate -eq 'Held') { 'Hold' } else { 'Approve' }
             }
         })

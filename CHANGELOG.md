@@ -19,6 +19,10 @@ All notable changes to this project are documented here. The format follows
   an Application event.
 - Previews are kept server-side in the session, expire after `PreviewMaxAgeMinutes`, and are confirmed
   by id only.
+- Own theme over Pode.Web (`public/portcullis.css`), light and dark: system font, flat cards with
+  chevron collapse buttons, lighter tables, near-white disabled buttons, spaced buttons, a hamburger
+  toggle and an icon rail when the sidebar is collapsed. Empty result tables stay hidden.
+- Gate reasons and messages start with a capital letter.
 - Readable table headers, blank cells instead of "undefined", and words kept whole in table cells
   (`public/portcullis.css`); wide tables scroll sideways.
 - Pode 2.14.1 and Pode.Web 1.0.0 pinned as `RequiredModules` in the Portcullis manifest.
