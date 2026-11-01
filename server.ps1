@@ -3,9 +3,12 @@
     Starts the Portcullis WSUS admin portal (Pode + Pode.Web).
 
 .DESCRIPTION
-    Four pages:
-      Status   Both nodes from Get-WsusNodeStatus, refreshed every minute; start a sync on either node.
-      Rings    Preview the Approve-WsusRing gate, then confirm to approve what passed.
+    Five pages:
+      Status    Both nodes from Get-WsusNodeStatus, refreshed every minute; start a sync on either node.
+      Calendar  The month's patch cycle: Patch Tuesday, what to do when, and when each ring installs
+                (from the ring GPOs; GET /api/v1/calendar feeds it).
+      Rings     Preview the Approve-WsusRing gate, then confirm to approve what passed; says when the
+                rings will install.
       Decline  Look up a KB on the upstream, then confirm to decline it.
       Audit    The newest changes made through the portal, with who confirmed them.
 
@@ -48,6 +51,13 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
     Import-PodeModule -Name WSUS
     Import-PodeModule -Path $portcullisManifest
     Set-PodeState -Name 'Config' -Value $config
+
+    # When each ring installs, read from the ring GPOs (or the configuration). Read again every hour
+    # so a GPO change shows without a restart.
+    Set-PodeState -Name 'Schedule' -Value @(Get-PortcullisInstallSchedule -Config $config)
+    Add-PodeTimer -Name 'RefreshSchedule' -Interval 3600 -ScriptBlock {
+        Set-PodeState -Name 'Schedule' -Value @(Get-PortcullisInstallSchedule -Config (Get-PodeState -Name 'Config'))
+    }
 
     New-PodeLogFileMethod -Name 'portcullis_errors' | Enable-PodeLogErrorType
 
@@ -160,10 +170,39 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
         }
     )
 
+    # ---------------------------------------------------------------- Calendar
+    # Read-only JSON for the calendar grid (public/portcullis.js). Same sign-in as the pages.
+    $routeAuth = if ($config.Authentication -eq 'IIS') { @{ Authentication = 'Windows' } } else { @{} }
+    Add-PodeRoute -Method Get -Path '/api/v1/calendar' @routeAuth -ScriptBlock {
+        $month = $WebEvent.Query['month']
+        $date = if ($month -match '^20\d{2}-(0[1-9]|1[0-2])$') {
+            [datetime]::ParseExact("$month-01", 'yyyy-MM-dd', [Globalization.CultureInfo]::InvariantCulture)
+        }
+        else {
+            (Get-Date).Date
+        }
+        $schedule = @(Get-PodeState -Name 'Schedule')
+        Write-PodeJsonResponse -Depth 4 -Value @{
+            month    = $date.ToString('yyyy-MM')
+            today    = (Get-Date).ToString('yyyy-MM-dd')
+            events   = @(Get-PortcullisPatchCalendar -Schedule $schedule -Month $date |
+                    Select-Object -Property Date, Time, Kind, Ring, Title, Detail)
+            schedule = @($schedule | Select-Object -Property Ring, Day, Hour, DetectionHours, Source)
+            warnings = @($schedule | Where-Object { $_.Warning } | ForEach-Object { $_.Warning })
+        }
+    }
+
+    Add-PodeWebPage -Name 'Calendar' -DisplayName 'Patch calendar' -Index 1 -Icon 'calendar-month' -Content @(
+        New-PodeWebCard -Name 'Cycle' -DisplayName 'Patch cycle' -Content @(
+            # Drawn by public/portcullis.js from /api/v1/calendar.
+            New-PodeWebRaw -Value "<div id='pc-calendar' class='pc-calendar'></div>"
+        )
+    )
+
     # ---------------------------------------------------------------- Rings
-    Add-PodeWebPage -Name 'Rings' -DisplayName 'Promote rings' -Index 1 -Icon 'stairs-up' -Content @(
+    Add-PodeWebPage -Name 'Rings' -DisplayName 'Promote rings' -Index 2 -Icon 'stairs-up' -Content @(
         New-PodeWebCard -Name 'Gate' -DisplayName 'Gate settings' -Content @(
-            New-PodeWebParagraph -Value 'Previews Approve-WsusRing on the upstream: Critical and Security updates approved for Pilot, checked against the gate. Nothing is approved until you confirm. Monthly cycle: preview Monday of week 2, approve Tuesday.'
+            New-PodeWebParagraph -Value 'Previews Approve-WsusRing on the upstream: Critical and Security updates approved for Pilot, checked against the gate. Nothing is approved until you confirm. The Patch calendar shows this month''s dates.'
             New-PodeWebForm -Name 'RingGate' -SubmitText 'Preview' -Content @(
                 New-PodeWebTextbox -Name 'MinimumSoakDays' -DisplayName 'Minimum soak (days)' -Type Number -Value 5 -Required
                 New-PodeWebTextbox -Name 'MinimumInstalledPercent' -DisplayName 'Minimum installed in Pilot (%)' -Type Number -Value 90 -Required
@@ -191,6 +230,12 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
                 $WebEvent.Session.Data.RingPreviewRows = @($result.Rows)
                 $summary = $result.Summary
                 $text = 'Candidates: {0}. Would be approved: {1} ({2} forced). Held: {3}.' -f $summary.Candidates, $summary.Approvable, $summary.Forced, $summary.Held
+                if ($summary.Approvable -gt 0) {
+                    $installs = try { Format-PortcullisInstallTime -Schedule (Get-PodeState -Name 'Schedule') } catch { '' }
+                    if ($installs) {
+                        $text += " If approved now: $($installs -replace '^Installs', 'installs')"
+                    }
+                }
                 Update-PodeWebText -Id 'ring_summary' -Value $text
                 Update-PodeWebTable -Name 'RingPreview' -Data $result.Rows
                 if ($summary.Approvable -gt 0) { Enable-PodeWebButton -Name 'ApproveRing' } else { Disable-PodeWebButton -Name 'ApproveRing' }
@@ -221,7 +266,7 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
                 # above it (a page Load event runs too early to reach either).
                 $last = $WebEvent.Session.Data.RingResult
                 if ($last) {
-                    Update-PodeWebText -Id 'ring_result_when' -Value "Approved $($last.When)."
+                    Update-PodeWebText -Id 'ring_result_when' -Value ("Approved $($last.When). $($last.Installs)" -replace ' $', '')
                     $last.Rows
                 }
             }
@@ -238,11 +283,15 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
                 if ($approved -gt 0) {
                     # Kept in the session so the result is still here after leaving the page and coming back.
                     # A run that approved nothing leaves the previous last approval in place.
+                    $approvedAt = Get-Date
+                    $installs = try { Format-PortcullisInstallTime -Schedule (Get-PodeState -Name 'Schedule') -After $approvedAt } catch { '' }
                     $WebEvent.Session.Data.RingResult = @{
-                        When = '{0:yyyy-MM-dd HH:mm} by {1}' -f (Get-Date), $user
-                        Rows = $approvedRows
+                        When     = '{0:yyyy-MM-dd HH:mm} by {1}' -f $approvedAt, $user
+                        Installs = $installs
+                        Rows     = $approvedRows
                     }
-                    Update-PodeWebText -Id 'ring_result_when' -Value "Approved $($WebEvent.Session.Data.RingResult.When)."
+                    $last = $WebEvent.Session.Data.RingResult
+                    Update-PodeWebText -Id 'ring_result_when' -Value ("Approved $($last.When). $($last.Installs)" -replace ' $', '')
                     Update-PodeWebTable -Name 'RingResult' -Data $approvedRows
                 }
 
@@ -269,7 +318,7 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
     )
 
     # ---------------------------------------------------------------- Decline
-    Add-PodeWebPage -Name 'Decline' -DisplayName 'Decline an update' -Index 2 -Icon 'cancel' -Content @(
+    Add-PodeWebPage -Name 'Decline' -DisplayName 'Decline an update' -Index 3 -Icon 'cancel' -Content @(
         New-PodeWebCard -Name 'Lookup' -Content @(
             New-PodeWebParagraph -Value 'For an update Pilot found bad. Looks the KB up on the upstream (every product and architecture variant, exact KB only); nothing is declined until you confirm. The replica copies the decline on its next sync.'
             New-PodeWebForm -Name 'KbLookup' -SubmitText 'Look up' -Content @(
@@ -347,7 +396,7 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
     )
 
     # ---------------------------------------------------------------- Audit
-    Add-PodeWebPage -Name 'Audit' -Index 3 -Icon 'clipboard-text-clock' -Content @(
+    Add-PodeWebPage -Name 'Audit' -Index 4 -Icon 'clipboard-text-clock' -Content @(
         New-PodeWebCard -Name 'Changes' -DisplayName 'Changes made through the portal' -Content @(
             New-PodeWebParagraph -Value 'Changes run as the portal service account, so WSUS only sees that account. This log records who confirmed each one. Newest first.'
             New-PodeWebTable -Name 'AuditLog' -DisplayName 'Audit log' -Compact -Paginate -PageSize 25 -ScriptBlock {

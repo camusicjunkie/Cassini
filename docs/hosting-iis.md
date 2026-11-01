@@ -13,8 +13,11 @@ The host isn't decided yet. Either works:
 ## 1. Prerequisites on the host
 
 ```powershell
-Install-WindowsFeature Web-Server, Web-Windows-Auth, UpdateServices-API
+Install-WindowsFeature Web-Server, Web-Windows-Auth, UpdateServices-API, GPMC
 ```
+
+`GPMC` brings the GroupPolicy module, which the portal uses to read install days and times from the ring
+GPOs. Without it the portal uses the `Schedule` values in the configuration.
 
 - Install the **.NET Hosting Bundle** (it provides the ASP.NET Core Module V2). Pode itself doesn't need
   .NET Core; IIS needs the module to start and proxy the process.

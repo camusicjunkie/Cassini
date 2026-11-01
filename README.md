@@ -8,7 +8,8 @@ an admin workstation. Every change is a preview first, then a confirm, and is re
 | Page | What it does | WSUS module call |
 |------|--------------|------------------|
 | Status | Both nodes: role, sync state and progress, last sync, update/approved/declined counts, content left to download. Refreshes every minute. Start a sync on either node. | `Get-WsusNodeStatus`, `Start-WsusSync` |
-| Promote rings | Preview the gate (soak, installed percent, optional Force), then approve what passed. | `Approve-WsusRing -WhatIf`, then `Approve-WsusRing` |
+| Patch calendar | The month's cycle from Patch Tuesday: what runs automatically, what you do and by when, and when each ring installs. Install days and times come from the ring GPOs. | – (GroupPolicy `Get-GPRegistryValue`) |
+| Promote rings | Preview the gate (soak, installed percent, optional Force), then approve what passed. Says when the rings will install, before and after the approval. | `Approve-WsusRing -WhatIf`, then `Approve-WsusRing` |
 | Decline an update | Look up a KB on the upstream (exact match, every variant), then decline it. | read-only lookup, then `Deny-WsusUpdate` |
 | Audit | The newest changes made through the portal, with who confirmed each one. | – |
 
@@ -42,6 +43,20 @@ Pilot installs changed in between. The result table shows what was actually appr
 - Threats, controls and the hardening plan for the server, the account and the logs:
   [docs/security.md](docs/security.md).
 
+## When the rings install
+
+Approvals decide what a ring installs; its client GPO decides when (WSUS README, section 7). The portal
+reads `ScheduledInstallDay`, `ScheduledInstallTime`, the week settings and `DetectionFrequency` from each
+ring's GPO (`WSUS - Pilot`, `WSUS - Workstations`, `WSUS - Servers` by default; `Schedule` in the
+configuration), again every hour. That needs the GroupPolicy module on the portal server
+(`Install-WindowsFeature GPMC`); without it, or if a GPO can't be read, the configured day and time are used
+and the calendar says so.
+
+A client only installs what it has detected, and it scans every `DetectionFrequency` hours (22). So an
+approval installs at the first window at least that long after it: approve by Tuesday 21:00 for
+Wednesday 19:00. The calendar shows that deadline, and Promote rings shows the windows an approval made now
+would reach. Times are client local time, as set in the GPO.
+
 ## Requirements
 
 - Windows Server with IIS, the ASP.NET Core Module V2 (in the .NET Hosting Bundle) and Windows
@@ -51,6 +66,7 @@ Pilot installs changed in between. The result table shows what was actually appr
   - `UpdateServices` (the RSAT WSUS API: `Install-WindowsFeature UpdateServices-API`),
   - `Pode` 2.14.1 and `Pode.Web` 1.0.0 (see the note below).
 - Network: the portal host to both nodes on 8531.
+- For install times from the ring GPOs: the GroupPolicy module (`Install-WindowsFeature GPMC`). Optional.
 
 **Pode.Web version.** The only stable Pode.Web release is 0.8.3, from February 2023. Portcullis targets
 1.0.0 (preview3, May 2026), which is what the project is maintained on and which works with current Pode.

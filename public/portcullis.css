@@ -856,3 +856,444 @@ body[pode-theme] div[role='table'] nav[role='pagination'] .page-link {
     font-size: 0.85rem;
     line-height: 1;
 }
+
+/* ------------------------------------------------------------------ Patch calendar
+   Drawn by portcullis.js into #pc-calendar on the Calendar page. One colour per kind of event and
+   per ring, the same in the grid, the day panel and the legend. */
+body[pode-theme='light'] {
+    --pc-cal-release: #7c3aed;
+    --pc-cal-release-soft: #f3e8ff;
+    --pc-cal-action: #2563eb;
+    --pc-cal-action-soft: #eff4ff;
+    --pc-cal-auto: #64748b;
+    --pc-cal-auto-soft: #f1f5f9;
+    --pc-cal-pilot: #d97706;
+    --pc-cal-pilot-soft: #fef3c7;
+    --pc-cal-workstations: #0d9488;
+    --pc-cal-workstations-soft: #ccfbf1;
+    --pc-cal-servers: #4f46e5;
+    --pc-cal-servers-soft: #e0e7ff;
+    --pc-cal-warn-bg: #fffbeb;
+    --pc-cal-warn-border: #fcd34d;
+    --pc-cal-warn-text: #92400e;
+}
+
+body[pode-theme='dark'] {
+    --pc-cal-release: #a78bfa;
+    --pc-cal-release-soft: rgba(167, 139, 250, 0.16);
+    --pc-cal-action: #60a5fa;
+    --pc-cal-action-soft: rgba(96, 165, 250, 0.16);
+    --pc-cal-auto: #94a3b8;
+    --pc-cal-auto-soft: rgba(148, 163, 184, 0.14);
+    --pc-cal-pilot: #fbbf24;
+    --pc-cal-pilot-soft: rgba(251, 191, 36, 0.14);
+    --pc-cal-workstations: #2dd4bf;
+    --pc-cal-workstations-soft: rgba(45, 212, 191, 0.14);
+    --pc-cal-servers: #818cf8;
+    --pc-cal-servers-soft: rgba(129, 140, 248, 0.16);
+    --pc-cal-warn-bg: rgba(251, 191, 36, 0.1);
+    --pc-cal-warn-border: rgba(251, 191, 36, 0.35);
+    --pc-cal-warn-text: #fcd34d;
+}
+
+.pc-calendar .kind-release { --pc-cal-c: var(--pc-cal-release); --pc-cal-soft: var(--pc-cal-release-soft); }
+.pc-calendar .kind-action { --pc-cal-c: var(--pc-cal-action); --pc-cal-soft: var(--pc-cal-action-soft); }
+.pc-calendar .kind-auto { --pc-cal-c: var(--pc-cal-auto); --pc-cal-soft: var(--pc-cal-auto-soft); }
+.pc-calendar .ring-pilot { --pc-cal-c: var(--pc-cal-pilot); --pc-cal-soft: var(--pc-cal-pilot-soft); }
+.pc-calendar .ring-workstations { --pc-cal-c: var(--pc-cal-workstations); --pc-cal-soft: var(--pc-cal-workstations-soft); }
+.pc-calendar .ring-servers { --pc-cal-c: var(--pc-cal-servers); --pc-cal-soft: var(--pc-cal-servers-soft); }
+
+/* The raw element sits in a span; let the calendar take the full card width. */
+span[pode-object='raw']:has(> .pc-calendar) {
+    display: block;
+}
+
+.pc-calendar {
+    display: block;
+    color: var(--pc-text);
+    /* Pode.Web breaks words anywhere inside cards; keep them whole here. */
+    word-break: normal;
+}
+
+.pc-cal-loading,
+.pc-cal-error {
+    margin: 0.5rem 0;
+    color: var(--pc-text-2);
+}
+
+.pc-cal-error {
+    color: var(--pc-danger);
+}
+
+.pc-cal-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.pc-cal-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.pc-calendar .pc-cal-title {
+    margin: 0;
+    min-width: 10.5rem;
+    text-align: center;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--pc-text);
+}
+
+.pc-cal-step,
+.pc-cal-today {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 2rem;
+    border: 1px solid var(--pc-border-strong);
+    border-radius: var(--pc-radius-sm);
+    background: var(--pc-surface);
+    color: var(--pc-text);
+    font: inherit;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.pc-cal-step {
+    width: 2rem;
+    padding: 0;
+    font-size: 1.15rem;
+}
+
+.pc-cal-today {
+    padding: 0 0.85rem;
+}
+
+.pc-cal-step:hover,
+.pc-cal-today:hover:not(:disabled) {
+    background: var(--pc-hover);
+}
+
+.pc-cal-today:disabled {
+    color: var(--pc-disabled-text);
+    background: var(--pc-disabled-bg);
+    border-color: var(--pc-disabled-border);
+    cursor: default;
+}
+
+.pc-cal-step:focus-visible,
+.pc-cal-today:focus-visible,
+.pc-cal-day:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--pc-focus);
+}
+
+.pc-cal-warning {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--pc-cal-warn-border);
+    border-radius: var(--pc-radius-sm);
+    background: var(--pc-cal-warn-bg);
+    color: var(--pc-cal-warn-text);
+    font-size: 0.875rem;
+}
+
+.pc-cal-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 18rem;
+    gap: 1rem;
+    align-items: start;
+}
+
+.pc-cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    border: 1px solid var(--pc-border);
+    border-radius: var(--pc-radius);
+    overflow: hidden;
+    background: var(--pc-border);
+    gap: 1px;
+}
+
+.pc-cal-weekday {
+    padding: 0.4rem 0.5rem;
+    background: var(--pc-surface-2);
+    color: var(--pc-text-3);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.pc-cal-day {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    min-height: 6.25rem;
+    min-width: 0;
+    padding: 0.35rem 0.4rem 0.45rem;
+    border: 0;
+    background: var(--pc-surface);
+    color: var(--pc-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.pc-cal-day:hover {
+    background: var(--pc-hover);
+}
+
+.pc-cal-day.is-outside {
+    background: var(--pc-surface-2);
+    color: var(--pc-text-3);
+}
+
+.pc-cal-day.is-selected {
+    box-shadow: inset 0 0 0 2px var(--pc-accent);
+}
+
+.pc-cal-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: flex-start;
+    min-width: 1.6rem;
+    height: 1.6rem;
+    margin-bottom: 0.15rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.pc-cal-day.is-today .pc-cal-num {
+    background: var(--pc-accent);
+    color: #fff;
+    font-weight: 600;
+}
+
+.pc-cal-chips {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+.pc-cal-chip {
+    display: block;
+    min-width: 0;
+    padding: 0.1rem 0.35rem;
+    border-left: 3px solid var(--pc-cal-c);
+    border-radius: 4px;
+    background: var(--pc-cal-soft);
+    color: var(--pc-text);
+    font-size: 0.72rem;
+    line-height: 1.3;
+    /* Up to two lines, then an ellipsis. */
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    overflow-wrap: break-word;
+}
+
+.pc-cal-chip-time {
+    margin-right: 0.1rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.pc-cal-side {
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--pc-border);
+    border-radius: var(--pc-radius);
+    background: var(--pc-surface-2);
+}
+
+.pc-calendar .pc-cal-side-title {
+    margin: 0 0 0.6rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--pc-text);
+}
+
+.pc-cal-empty {
+    margin: 0 0 0.6rem;
+    color: var(--pc-text-3);
+    font-size: 0.875rem;
+}
+
+.pc-cal-item {
+    margin-bottom: 0.6rem;
+    padding: 0.5rem 0.65rem;
+    border-left: 3px solid var(--pc-cal-c);
+    border-radius: var(--pc-radius-sm);
+    background: var(--pc-surface);
+}
+
+.pc-calendar .pc-cal-upcoming {
+    margin: 0.2rem 0 0.45rem;
+    color: var(--pc-text-3);
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.pc-cal-item-date {
+    margin-top: 0.15rem;
+    color: var(--pc-text-3);
+    font-size: 0.78rem;
+}
+
+.pc-cal-item-head {
+    display: flex;
+    justify-content: space-between;
+    color: var(--pc-text-3);
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.pc-cal-item-time {
+    color: var(--pc-text);
+    font-variant-numeric: tabular-nums;
+}
+
+.pc-cal-item-title {
+    margin-top: 0.1rem;
+    font-weight: 600;
+}
+
+.pc-cal-item-detail {
+    margin-top: 0.15rem;
+    color: var(--pc-text-2);
+    font-size: 0.85rem;
+}
+
+.pc-cal-windows {
+    margin-top: 0.9rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--pc-border);
+}
+
+.pc-calendar .pc-cal-windows h4 {
+    margin: 0 0 0.45rem;
+    color: var(--pc-text-3);
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.pc-cal-window {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 0.5rem;
+    margin-bottom: 0.4rem;
+    padding-left: 0.55rem;
+    border-left: 3px solid var(--pc-cal-c);
+    font-size: 0.85rem;
+}
+
+.pc-cal-window-ring {
+    font-weight: 600;
+}
+
+.pc-cal-window-when {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.pc-cal-window-source {
+    grid-column: 1 / -1;
+    color: var(--pc-text-3);
+    font-size: 0.75rem;
+}
+
+.pc-cal-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1rem;
+    margin-top: 0.75rem;
+    color: var(--pc-text-2);
+    font-size: 0.8rem;
+}
+
+.pc-cal-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.pc-cal-dot {
+    width: 0.65rem;
+    height: 0.65rem;
+    border-radius: 3px;
+    background: var(--pc-cal-c);
+}
+
+@media (max-width: 1279.98px) {
+    .pc-cal-body {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* Phones: the grid shows a dot per event; the day panel below has the details. */
+@media (max-width: 767.98px) {
+    .pc-cal-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .pc-calendar .pc-cal-title {
+        min-width: 8.5rem;
+        font-size: 1rem;
+    }
+
+    .pc-cal-weekday {
+        padding: 0.35rem 0;
+        text-align: center;
+        font-size: 0.68rem;
+        letter-spacing: 0;
+    }
+
+    .pc-cal-day {
+        align-items: center;
+        min-height: 3.4rem;
+        padding: 0.25rem 0.1rem;
+    }
+
+    .pc-cal-num {
+        align-self: center;
+    }
+
+    .pc-cal-chips {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.15rem;
+    }
+
+    .pc-cal-chip {
+        display: block;
+        width: 0.45rem;
+        height: 0.45rem;
+        padding: 0;
+        border: 0;
+        border-radius: 999px;
+        background: var(--pc-cal-c);
+    }
+
+    .pc-cal-chip-time,
+    .pc-cal-chip-title {
+        display: none;
+    }
+}

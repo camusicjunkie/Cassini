@@ -53,9 +53,28 @@ Describe 'Get-PortcullisConfig' {
         @{ Case = 'a bad port'; Body = "@{ UpstreamServer = 'wsus01'; Port = 70000 }"; Message = '*Port must be a port number*' }
         @{ Case = 'a bad preview age'; Body = "@{ UpstreamServer = 'wsus01'; PreviewMaxAgeMinutes = 0 }"; Message = '*PreviewMaxAgeMinutes*' }
         @{ Case = 'a bad session time-out'; Body = "@{ UpstreamServer = 'wsus01'; SessionMinutes = 1 }"; Message = '*SessionMinutes must be 5 to 480*' }
+        @{ Case = 'an unknown ring'; Body = "@{ UpstreamServer = 'wsus01'; Schedule = @{ Canary = @{} } }"; Message = '*Unknown ring(s) in Schedule: Canary*' }
+        @{ Case = 'an unknown ring setting'; Body = "@{ UpstreamServer = 'wsus01'; Schedule = @{ Pilot = @{ Minute = 5 } } }"; Message = '*Unknown setting(s) in Schedule.Pilot: Minute*' }
+        @{ Case = 'a bad install day'; Body = "@{ UpstreamServer = 'wsus01'; Schedule = @{ Pilot = @{ Day = 'Funday' } } }"; Message = '*Schedule.Pilot.Day must be Sunday to Saturday or Everyday*' }
+        @{ Case = 'a bad install hour'; Body = "@{ UpstreamServer = 'wsus01'; Schedule = @{ Pilot = @{ Hour = 24 } } }"; Message = '*Schedule.Pilot.Hour must be 0 to 23*' }
+        @{ Case = 'a bad detection interval'; Body = "@{ UpstreamServer = 'wsus01'; Schedule = @{ Pilot = @{ DetectionHours = 0 } } }"; Message = '*Schedule.Pilot.DetectionHours must be 1 to 48*' }
         @{ Case = 'a bad audit event setting'; Body = "@{ UpstreamServer = 'wsus01'; AuditEventLog = 'Sometimes' }"; Message = "*'Required' or 'Optional'*" }
     ) {
         { Get-PortcullisConfig -Path (Write-Config $Body) } | Should -Throw $Message
+    }
+
+    It 'fills the schedule from the WSUS README and merges a partial one' {
+        $config = Get-PortcullisConfig -Path (Write-Config "@{ UpstreamServer = 'wsus01' }")
+        @($config.Schedule.Keys) | Should -Be @('Pilot', 'Workstations', 'Servers')
+        $config.Schedule.Workstations.Day | Should -Be 'Wednesday'
+        $config.Schedule.Workstations.Gpo | Should -Be 'WSUS - Workstations'
+        $config.Schedule.Servers.Hour | Should -Be 19
+
+        $config = Get-PortcullisConfig -Path (Write-Config "@{ UpstreamServer = 'wsus01'; Schedule = @{ Servers = @{ Day = 'friday'; Hour = '20' } } }")
+        $config.Schedule.Servers.Day | Should -Be 'Friday'
+        $config.Schedule.Servers.Hour | Should -Be 20
+        $config.Schedule.Servers.Gpo | Should -Be 'WSUS - Servers'
+        $config.Schedule.Pilot.Day | Should -Be 'Thursday'
     }
 
     It 'allows no admin group when authentication is None' {

@@ -32,6 +32,7 @@ about that, what the server around it has to do, and the plan for the parts outs
 | Leaking versions and paths | No `Server` or `X-Powered-By` headers; `Referrer-Policy: no-referrer` | `web.config`, `server.ps1` |
 | Unexpected methods or large bodies | Only GET, HEAD and POST; bodies over 1 MB refused | `web.config` |
 | A change with no record, or a record that is quietly edited | The audit file is written before the change returns, or the change reports a failure; with `AuditEventLog = 'Required'` (the default under IIS) the server will not start without the event source, so every change also reaches the Event Log and Splunk | `Write-PortcullisAudit`, `Assert-PortcullisAuditSource` |
+| Reading data through the API | `GET /api/v1/calendar` is read-only, behind the same Windows sign-in, with the same headers; its one parameter must match `yyyy-MM` | `server.ps1` |
 | Dependencies loaded from the internet | Pode.Web serves its own copies of jQuery, Bootstrap and the rest; nothing comes from a CDN | Pode.Web |
 
 How these were checked: unit tests for every decision function (`./build.ps1 -Task All`), and a

@@ -24,9 +24,13 @@
     FunctionsToExport    = @(
         'Assert-PortcullisAuditSource'
         'Find-PortcullisUpdate'
+        'Format-PortcullisInstallTime'
         'Get-PortcullisAuditLog'
         'Get-PortcullisConfig'
+        'Get-PortcullisInstallSchedule'
+        'Get-PortcullisNextInstall'
         'Get-PortcullisNodeStatus'
+        'Get-PortcullisPatchCalendar'
         'Get-PortcullisRingPreview'
         'Invoke-PortcullisDecline'
         'Invoke-PortcullisRingApproval'

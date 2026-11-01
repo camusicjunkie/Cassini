@@ -124,3 +124,256 @@ function addThemeToggle() {
 
     render();
 }
+
+// ------------------------------------------------------------------ Patch calendar
+// The Calendar page holds an empty <div id="pc-calendar">; this draws the month from
+// /api/v1/calendar. Pode.Web adds page content after the page loads, so wait for the element.
+(function () {
+    var weekdays = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+    var kindLabel = { release: 'Release', auto: 'Automatic', action: 'You do', install: 'Install' };
+
+    function watchForCalendar() {
+        var start = function () {
+            var host = document.getElementById('pc-calendar');
+            if (host && !host.getAttribute('data-ready')) {
+                host.setAttribute('data-ready', '1');
+                new PatchCalendar(host).load(null);
+            }
+        };
+        start();
+        new MutationObserver(start).observe(document.body, { childList: true, subtree: true });
+    }
+
+    function el(tag, className, text) {
+        var node = document.createElement(tag);
+        if (className) { node.className = className; }
+        if (text !== undefined && text !== null) { node.textContent = text; }
+        return node;
+    }
+
+    function pad(n) { return (n < 10 ? '0' : '') + n; }
+    function iso(d) { return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate()); }
+    function parseIso(s) { var p = s.split('-'); return new Date(+p[0], +p[1] - 1, +(p[2] || 1)); }
+
+    function PatchCalendar(host) {
+        this.host = host;
+        this.data = null;
+        this.selected = null;
+    }
+
+    PatchCalendar.prototype.load = function (month) {
+        var self = this;
+        var base = document.body.getAttribute('pode-app-path') || '';
+        var url = base + '/api/v1/calendar' + (month ? '?month=' + encodeURIComponent(month) : '');
+        if (!this.data) {
+            this.host.replaceChildren(el('p', 'pc-cal-loading', 'Loading the calendar…'));
+        }
+        this.host.setAttribute('aria-busy', 'true');
+        fetch(url, { credentials: 'same-origin', headers: { Accept: 'application/json' } })
+            .then(function (r) {
+                if (!r.ok) { throw new Error('The server answered ' + r.status + '.'); }
+                return r.json();
+            })
+            .then(function (data) {
+                self.data = data;
+                var monthOfToday = data.today.slice(0, 7) === data.month;
+                var patchTuesday = (data.events || []).filter(function (e) { return e.Kind === 'release'; })[0];
+                self.selected = monthOfToday ? data.today : (patchTuesday ? patchTuesday.Date : data.month + '-01');
+                self.render();
+            })
+            .catch(function (err) {
+                self.host.replaceChildren(el('p', 'pc-cal-error', 'The calendar could not be loaded. ' + err.message));
+            })
+            .finally(function () { self.host.removeAttribute('aria-busy'); });
+    };
+
+    PatchCalendar.prototype.shift = function (months) {
+        var d = parseIso(this.data.month);
+        d.setMonth(d.getMonth() + months);
+        this.load(d.getFullYear() + '-' + pad(d.getMonth() + 1));
+    };
+
+    PatchCalendar.prototype.eventsOn = function (day) {
+        return (this.data.events || []).filter(function (e) { return e.Date === day; });
+    };
+
+    PatchCalendar.prototype.render = function () {
+        var self = this;
+        var data = this.data;
+        var first = parseIso(data.month);
+        var title = first.toLocaleDateString('en-GB', { month: 'long', year: 'numeric' });
+
+        // Toolbar: previous, month, next, today.
+        var toolbar = el('div', 'pc-cal-toolbar');
+        var nav = el('div', 'pc-cal-nav');
+        var prev = el('button', 'pc-cal-step');
+        prev.type = 'button';
+        prev.setAttribute('aria-label', 'Previous month');
+        prev.appendChild(el('span', 'mdi mdi-chevron-left'));
+        prev.addEventListener('click', function () { self.shift(-1); });
+        var next = el('button', 'pc-cal-step');
+        next.type = 'button';
+        next.setAttribute('aria-label', 'Next month');
+        next.appendChild(el('span', 'mdi mdi-chevron-right'));
+        next.addEventListener('click', function () { self.shift(1); });
+        nav.append(prev, el('h2', 'pc-cal-title', title), next);
+        var today = el('button', 'pc-cal-today', 'Today');
+        today.type = 'button';
+        today.disabled = data.today.slice(0, 7) === data.month && this.selected === data.today;
+        today.addEventListener('click', function () {
+            if (data.today.slice(0, 7) === data.month) { self.select(data.today, true); } else { self.load(null); }
+        });
+        toolbar.append(nav, today);
+
+        var parts = [toolbar];
+        (data.warnings || []).forEach(function (w) {
+            var warn = el('div', 'pc-cal-warning');
+            warn.setAttribute('role', 'note');
+            warn.append(el('span', 'mdi mdi-alert-outline'), el('span', null, w));
+            parts.push(warn);
+        });
+
+        // Month grid, weeks starting on Monday.
+        var body = el('div', 'pc-cal-body');
+        var grid = el('div', 'pc-cal-grid');
+        grid.setAttribute('role', 'grid');
+        grid.setAttribute('aria-label', title);
+        weekdays.forEach(function (w) { grid.appendChild(el('div', 'pc-cal-weekday', w)); });
+
+        var start = new Date(first);
+        start.setDate(1 - ((first.getDay() + 6) % 7));
+        this.cells = {};
+        for (var i = 0; i < 42; i++) {
+            var day = new Date(start);
+            day.setDate(start.getDate() + i);
+            if (i === 35 && day.getMonth() !== first.getMonth()) { break; }
+            grid.appendChild(this.cell(day, day.getMonth() === first.getMonth()));
+        }
+
+        var side = el('aside', 'pc-cal-side');
+        side.setAttribute('aria-live', 'polite');
+        this.side = side;
+        body.append(grid, side);
+        parts.push(body, this.legend());
+
+        this.host.replaceChildren.apply(this.host, parts);
+        this.select(this.selected, false);
+    };
+
+    PatchCalendar.prototype.cell = function (day, inMonth) {
+        var self = this;
+        var key = iso(day);
+        var events = this.eventsOn(key);
+        var cell = el('button', 'pc-cal-day');
+        cell.type = 'button';
+        cell.setAttribute('role', 'gridcell');
+        cell.setAttribute('data-date', key);
+        if (!inMonth) { cell.classList.add('is-outside'); }
+        if (key === this.data.today) { cell.classList.add('is-today'); cell.setAttribute('aria-current', 'date'); }
+        if (events.length) { cell.classList.add('has-events'); }
+
+        var label = day.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+        cell.setAttribute('aria-label', label + (events.length ? ', ' + events.map(function (e) { return e.Title; }).join(', ') : ''));
+
+        cell.appendChild(el('span', 'pc-cal-num', String(day.getDate())));
+        var list = el('span', 'pc-cal-chips');
+        events.forEach(function (e) {
+            var chip = el('span', 'pc-cal-chip kind-' + e.Kind + (e.Ring ? ' ring-' + e.Ring.toLowerCase() : ''));
+            if (e.Time) { chip.append(el('span', 'pc-cal-chip-time', e.Time), document.createTextNode(' ')); }
+            // An install chip is already coloured by ring; its ring name is the whole story.
+            chip.appendChild(el('span', 'pc-cal-chip-title', e.Kind === 'install' && e.Ring ? e.Ring : e.Title));
+            list.appendChild(chip);
+        });
+        cell.appendChild(list);
+
+        cell.addEventListener('click', function () { self.select(key, true); });
+        cell.addEventListener('keydown', function (ev) {
+            var step = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[ev.key];
+            if (!step) { return; }
+            ev.preventDefault();
+            var target = parseIso(key);
+            target.setDate(target.getDate() + step);
+            var targetKey = iso(target);
+            if (self.cells[targetKey]) { self.select(targetKey, true); }
+        });
+        this.cells[key] = cell;
+        return cell;
+    };
+
+    PatchCalendar.prototype.select = function (key, focus) {
+        var self = this;
+        Object.keys(this.cells).forEach(function (k) {
+            var selected = k === key;
+            self.cells[k].classList.toggle('is-selected', selected);
+            self.cells[k].setAttribute('aria-selected', selected ? 'true' : 'false');
+            self.cells[k].tabIndex = selected ? 0 : -1;
+        });
+        this.selected = key;
+        if (focus && this.cells[key]) { this.cells[key].focus(); }
+        var todayButton = this.host.querySelector('.pc-cal-today');
+        if (todayButton) { todayButton.disabled = key === this.data.today; }
+        this.renderSide(key);
+    };
+
+    PatchCalendar.prototype.renderSide = function (key) {
+        var side = this.side;
+        var day = parseIso(key);
+        var heading = day.toLocaleDateString('en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+        var parts = [el('h3', 'pc-cal-side-title', heading)];
+
+        var item = function (e, withDate) {
+            var node = el('div', 'pc-cal-item kind-' + e.Kind + (e.Ring ? ' ring-' + e.Ring.toLowerCase() : ''));
+            var head = el('div', 'pc-cal-item-head');
+            head.appendChild(el('span', 'pc-cal-item-kind', kindLabel[e.Kind] || e.Kind));
+            if (e.Time) { head.appendChild(el('span', 'pc-cal-item-time', e.Time)); }
+            node.append(head, el('div', 'pc-cal-item-title', e.Title));
+            if (withDate) {
+                node.appendChild(el('div', 'pc-cal-item-date',
+                    parseIso(e.Date).toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' })));
+            }
+            else {
+                node.appendChild(el('div', 'pc-cal-item-detail', e.Detail));
+            }
+            return node;
+        };
+
+        var events = this.eventsOn(key);
+        events.forEach(function (e) { parts.push(item(e, false)); });
+        if (!events.length) {
+            parts.push(el('p', 'pc-cal-empty', 'Nothing scheduled.'));
+            // An empty day says what comes next instead.
+            var later = (this.data.events || []).filter(function (e) { return e.Date > key; }).slice(0, 3);
+            if (later.length) {
+                parts.push(el('h4', 'pc-cal-upcoming', 'Coming up'));
+                later.forEach(function (e) { parts.push(item(e, true)); });
+            }
+        }
+
+        // Where the install times come from.
+        var windows = el('div', 'pc-cal-windows');
+        windows.appendChild(el('h4', null, 'Install windows (client local time)'));
+        (this.data.schedule || []).forEach(function (s) {
+            var row = el('div', 'pc-cal-window ring-' + s.Ring.toLowerCase());
+            var when = (s.Day === 'Everyday' ? 'Every day' : s.Day) + ' ' + pad(s.Hour) + ':00';
+            row.append(el('span', 'pc-cal-window-ring', s.Ring), el('span', 'pc-cal-window-when', when),
+                el('span', 'pc-cal-window-source', s.Source + ', seen within ' + s.DetectionHours + ' h'));
+            windows.appendChild(row);
+        });
+        parts.push(windows);
+        side.replaceChildren.apply(side, parts);
+    };
+
+    PatchCalendar.prototype.legend = function () {
+        var legend = el('div', 'pc-cal-legend');
+        [['kind-release', 'Patch Tuesday'], ['kind-action', 'You do'], ['kind-auto', 'Automatic'],
+            ['kind-install ring-pilot', 'Pilot'], ['kind-install ring-workstations', 'Workstations'],
+            ['kind-install ring-servers', 'Servers']].forEach(function (pair) {
+            var item = el('span', 'pc-cal-legend-item ' + pair[0]);
+            item.append(el('span', 'pc-cal-dot'), el('span', null, pair[1]));
+            legend.appendChild(item);
+        });
+        return legend;
+    };
+
+    document.addEventListener('DOMContentLoaded', watchForCalendar);
+})();

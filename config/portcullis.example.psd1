@@ -36,4 +36,15 @@
 
     # Shown in the browser tab and the top bar.
     Title                = 'Portcullis'
+
+    # When each ring installs, for the calendar and the install times on Promote rings. The portal
+    # reads day, hour and DetectionFrequency from each Gpo (needs the GroupPolicy module: GPMC);
+    # the values here are used when Gpo is '' or cannot be read. Hours are client local time.
+    # DetectionHours: an approval reaches a client within this many hours, so it installs at the
+    # first window at least that long after it.
+    Schedule             = @{
+        Pilot        = @{ Gpo = 'WSUS - Pilot'; Day = 'Thursday'; Hour = 19; DetectionHours = 22 }
+        Workstations = @{ Gpo = 'WSUS - Workstations'; Day = 'Wednesday'; Hour = 19; DetectionHours = 22 }
+        Servers      = @{ Gpo = 'WSUS - Servers'; Day = 'Thursday'; Hour = 19; DetectionHours = 22 }
+    }
 }

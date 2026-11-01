@@ -46,6 +46,12 @@ Remove-Item -LiteralPath $env:PORTCULLIS_DEV_STATE -ErrorAction SilentlyContinue
     ListenPort     = $Port
     AuditLogPath   = '$auditPath'
     Title          = 'Portcullis (dev)'
+    # No GPOs here: use the README schedule as configured.
+    Schedule       = @{
+        Pilot        = @{ Gpo = '' }
+        Workstations = @{ Gpo = '' }
+        Servers      = @{ Gpo = '' }
+    }
 }
 "@ | Set-Content -Path $configPath -Encoding UTF8
 

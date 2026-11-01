@@ -8,6 +8,16 @@ All notable changes to this project are documented here. The format follows
 
 ### Added
 
+- Patch calendar page: the month's cycle from Patch Tuesday (sync and Pilot approval, Packer build,
+  Pilot install, preview, the approval deadline, Workstations and Servers installs, straggler check),
+  with month navigation, keyboard arrows, a day panel, and dots on phones. Served from
+  `GET /api/v1/calendar` (`Get-PortcullisPatchCalendar`).
+- Install schedule from the ring GPOs (`Get-PortcullisInstallSchedule`, read hourly), with `Schedule` in
+  the configuration as the fallback and a warning for a GPO that installs only in some weeks of the month.
+  An approval reaches the first window at least `DetectionHours` (22) after it
+  (`Get-PortcullisNextInstall`).
+- Promote rings says when the rings will install: with the preview ("if approved now") and with the last
+  approval (`Format-PortcullisInstallTime`).
 - Security ([docs/security.md](docs/security.md)): POSTs sent from another site are refused with 403
   and logged (`Test-PortcullisRequestOrigin`); the session cookie is `Secure` and `HttpOnly` with an
   idle time-out of `SessionMinutes` (default 15); every response has a Content-Security-Policy
