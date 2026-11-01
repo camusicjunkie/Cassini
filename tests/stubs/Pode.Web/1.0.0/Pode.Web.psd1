@@ -1,5 +1,5 @@
-# Stand-in for Pode.Web so Portcullis's RequiredModules resolve in tests without the real module.
-# Same name, version and GUID as the real one; no functions (the Portcullis module never calls Pode.Web).
+# Stand-in for Pode.Web so Cassini's RequiredModules resolve in tests without the real module.
+# Same name, version and GUID as the real one; no functions (the Cassini module never calls Pode.Web).
 @{
     RootModule        = 'Pode.Web.psm1'
     ModuleVersion     = '1.0.0'

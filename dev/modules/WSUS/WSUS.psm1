@@ -5,17 +5,17 @@
 # runspaces, each with its own copy of this module. Start-DevServer.ps1 sets the path and clears the
 # file on every start. Without it (the variable unset) every preview starts from scratch.
 function Get-FakeRingApproval {
-    if (-not $env:PORTCULLIS_DEV_STATE -or -not (Test-Path -LiteralPath $env:PORTCULLIS_DEV_STATE)) {
+    if (-not $env:CASSINI_DEV_STATE -or -not (Test-Path -LiteralPath $env:CASSINI_DEV_STATE)) {
         return
     }
-    Get-Content -LiteralPath $env:PORTCULLIS_DEV_STATE
+    Get-Content -LiteralPath $env:CASSINI_DEV_STATE
 }
 
 function Add-FakeRingApproval {
     param ([string] $Kb)
 
-    if ($env:PORTCULLIS_DEV_STATE) {
-        Add-Content -LiteralPath $env:PORTCULLIS_DEV_STATE -Value $Kb
+    if ($env:CASSINI_DEV_STATE) {
+        Add-Content -LiteralPath $env:CASSINI_DEV_STATE -Value $Kb
     }
 }
 

@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Starts the Portcullis WSUS admin portal (Pode + Pode.Web).
+    Starts the Cassini WSUS admin portal (Pode + Pode.Web).
 
 .DESCRIPTION
     Five pages:
@@ -25,41 +25,41 @@
     response carries a Content-Security-Policy and other security headers, and with
     AuditEventLog = 'Required' the server does not start without the audit event source.
 
-    The logic lives in the Portcullis module (src/Portcullis); this file is only the web layout.
+    The logic lives in the Cassini module (src/Cassini); this file is only the web layout.
 
 .EXAMPLE
-    ./server.ps1 -ConfigPath ./config/portcullis.psd1
+    ./server.ps1 -ConfigPath ./config/cassini.psd1
 #>
 #Requires -Version 5.1
 [CmdletBinding()]
 param (
-    # Portal configuration file (see config/portcullis.example.psd1).
-    [string] $ConfigPath = (Join-Path -Path $PSScriptRoot -ChildPath 'config\portcullis.psd1')
+    # Portal configuration file (see config/cassini.example.psd1).
+    [string] $ConfigPath = (Join-Path -Path $PSScriptRoot -ChildPath 'config\cassini.psd1')
 )
 
 $ErrorActionPreference = 'Stop'
 
-$portcullisManifest = Join-Path -Path $PSScriptRoot -ChildPath 'src\Portcullis\Portcullis.psd1'
-# Portcullis's manifest brings in the pinned Pode and Pode.Web; a missing or wrong version fails here.
+$cassiniManifest = Join-Path -Path $PSScriptRoot -ChildPath 'src\Cassini\Cassini.psd1'
+# Cassini's manifest brings in the pinned Pode and Pode.Web; a missing or wrong version fails here.
 Import-Module -Name WSUS
-Import-Module -Name $portcullisManifest -Force
-$config = Get-PortcullisConfig -Path $ConfigPath
-Assert-PortcullisAuditSource -Config $config
+Import-Module -Name $cassiniManifest -Force
+$config = Get-CassiniConfig -Path $ConfigPath
+Assert-CassiniAuditSource -Config $config
 
 Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
     # Route and element scriptblocks run in their own runspaces: give them the modules and config.
     Import-PodeModule -Name WSUS
-    Import-PodeModule -Path $portcullisManifest
+    Import-PodeModule -Path $cassiniManifest
     Set-PodeState -Name 'Config' -Value $config
 
     # When each ring installs, read from the ring GPOs (or the configuration). Read again every hour
     # so a GPO change shows without a restart.
-    Set-PodeState -Name 'Schedule' -Value @(Get-PortcullisInstallSchedule -Config $config)
+    Set-PodeState -Name 'Schedule' -Value @(Get-CassiniInstallSchedule -Config $config)
     Add-PodeTimer -Name 'RefreshSchedule' -Interval 3600 -ScriptBlock {
-        Set-PodeState -Name 'Schedule' -Value @(Get-PortcullisInstallSchedule -Config (Get-PodeState -Name 'Config'))
+        Set-PodeState -Name 'Schedule' -Value @(Get-CassiniInstallSchedule -Config (Get-PodeState -Name 'Config'))
     }
 
-    New-PodeLogFileMethod -Name 'portcullis_errors' | Enable-PodeLogErrorType
+    New-PodeLogFileMethod -Name 'cassini_errors' | Enable-PodeLogErrorType
 
     if ($config.Authentication -eq 'None' -and (Test-PodeIsIIS)) {
         throw 'Authentication = None is for local development and is refused under IIS. Set Authentication = IIS.'
@@ -75,8 +75,8 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
 
     # Windows Authentication signs in any request the browser sends, including one another page
     # triggers. Refuse POSTs that the browser marks as coming from another site (CSRF).
-    Add-PodeMiddleware -Name 'PortcullisSameOrigin' -ScriptBlock {
-        $check = Test-PortcullisRequestOrigin -Method $WebEvent.Method -FetchSite (Get-PodeHeader -Name 'Sec-Fetch-Site') `
+    Add-PodeMiddleware -Name 'CassiniSameOrigin' -ScriptBlock {
+        $check = Test-CassiniRequestOrigin -Method $WebEvent.Method -FetchSite (Get-PodeHeader -Name 'Sec-Fetch-Site') `
             -Origin (Get-PodeHeader -Name 'Origin') -HostHeader (Get-PodeHeader -Name 'Host')
         if ($check.Allowed) {
             return $true
@@ -109,12 +109,12 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
     # The file's hash goes in the URL, so browsers fetch the new file after an upgrade instead of
     # keeping the cached one for up to an hour (static caching is on in server.psd1).
     $assetVersion = @{}
-    foreach ($asset in 'portcullis.css', 'portcullis.js') {
+    foreach ($asset in 'cassini.css', 'cassini.js') {
         $assetPath = Join-Path -Path $PSScriptRoot -ChildPath "public\$asset"
         $assetVersion[$asset] = (Get-FileHash -LiteralPath $assetPath -Algorithm SHA256).Hash -replace '^(.{12}).*$', '$1'
     }
-    Import-PodeWebStylesheet -Url "/portcullis.css?v=$($assetVersion['portcullis.css'])"
-    Import-PodeWebJavaScript -Url "/portcullis.js?v=$($assetVersion['portcullis.js'])"
+    Import-PodeWebStylesheet -Url "/cassini.css?v=$($assetVersion['cassini.css'])"
+    Import-PodeWebJavaScript -Url "/cassini.js?v=$($assetVersion['cassini.js'])"
 
     if ($config.Authentication -eq 'IIS') {
         # Windows Authentication in IIS; nested AD membership counts.
@@ -132,7 +132,7 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
                 Initialize-PodeWebTableColumn -Key 'DownloadPendingMB' -Name 'To download (MB)'
                 Initialize-PodeWebTableColumn -Key 'DownloadFailed' -Name 'Download failures'
             ) -ScriptBlock {
-                Get-PortcullisNodeStatus -Config (Get-PodeState -Name 'Config') |
+                Get-CassiniNodeStatus -Config (Get-PodeState -Name 'Config') |
                     Select-Object -Property Node, Server, Sync, LastSync, LastSyncResult, Updates, Approved, Declined, DownloadPendingMB, DownloadFailed, Note
             }
         )
@@ -156,9 +156,9 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
             New-PodeWebText -Id 'sync_node'
             New-PodeWebText -Value '?'
         ) -ScriptBlock {
-            $user = Resolve-PortcullisUser -AuthUser $WebEvent.Auth.User
+            $user = Resolve-CassiniUser -AuthUser $WebEvent.Auth.User
             try {
-                $result = Invoke-PortcullisSync -Config (Get-PodeState -Name 'Config') -Node $WebEvent.Data.Value -User $user -Confirm:$false
+                $result = Invoke-CassiniSync -Config (Get-PodeState -Name 'Config') -Node $WebEvent.Data.Value -User $user -Confirm:$false
                 $message = if ($result.Status -eq 'AlreadyRunning') { 'A sync is already running; nothing new started.' } else { "Sync started on $($result.Server)." }
                 Show-PodeWebToast -Title 'Sync' -Message $message
             }
@@ -171,7 +171,7 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
     )
 
     # ---------------------------------------------------------------- Calendar
-    # Read-only JSON for the calendar grid (public/portcullis.js). Same sign-in as the pages.
+    # Read-only JSON for the calendar grid (public/cassini.js). Same sign-in as the pages.
     $routeAuth = if ($config.Authentication -eq 'IIS') { @{ Authentication = 'Windows' } } else { @{} }
     Add-PodeRoute -Method Get -Path '/api/v1/calendar' @routeAuth -ScriptBlock {
         $month = $WebEvent.Query['month']
@@ -185,7 +185,7 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
         Write-PodeJsonResponse -Depth 4 -Value @{
             month    = $date.ToString('yyyy-MM')
             today    = (Get-Date).ToString('yyyy-MM-dd')
-            events   = @(Get-PortcullisPatchCalendar -Schedule $schedule -Month $date |
+            events   = @(Get-CassiniPatchCalendar -Schedule $schedule -Month $date |
                     Select-Object -Property Date, Time, Kind, Ring, Title, Detail)
             schedule = @($schedule | Select-Object -Property Ring, Day, Hour, DetectionHours, Source)
             warnings = @($schedule | Where-Object { $_.Warning } | ForEach-Object { $_.Warning })
@@ -194,8 +194,8 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
 
     Add-PodeWebPage -Name 'Calendar' -DisplayName 'Patch calendar' -Index 1 -Icon 'calendar-month' -Content @(
         New-PodeWebCard -Name 'Cycle' -DisplayName 'Patch cycle' -Content @(
-            # Drawn by public/portcullis.js from /api/v1/calendar.
-            New-PodeWebRaw -Value "<div id='pc-calendar' class='pc-calendar'></div>"
+            # Drawn by public/cassini.js from /api/v1/calendar.
+            New-PodeWebRaw -Value "<div id='cs-calendar' class='cs-calendar'></div>"
         )
     )
 
@@ -216,7 +216,7 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
                 }
 
                 try {
-                    $result = Get-PortcullisRingPreview -Config (Get-PodeState -Name 'Config') -MinimumSoakDays $soak -MinimumInstalledPercent $percent -Force:($WebEvent.Data.Force -eq 'true')
+                    $result = Get-CassiniRingPreview -Config (Get-PodeState -Name 'Config') -MinimumSoakDays $soak -MinimumInstalledPercent $percent -Force:($WebEvent.Data.Force -eq 'true')
                 }
                 catch {
                     $WebEvent.Session.Data.Remove('RingPreview')
@@ -231,7 +231,7 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
                 $summary = $result.Summary
                 $text = 'Candidates: {0}. Would be approved: {1} ({2} forced). Held: {3}.' -f $summary.Candidates, $summary.Approvable, $summary.Forced, $summary.Held
                 if ($summary.Approvable -gt 0) {
-                    $installs = try { Format-PortcullisInstallTime -Schedule (Get-PodeState -Name 'Schedule') } catch { '' }
+                    $installs = try { Format-CassiniInstallTime -Schedule (Get-PodeState -Name 'Schedule') } catch { '' }
                     if ($installs) {
                         $text += " If approved now: $($installs -replace '^Installs', 'installs')"
                     }
@@ -274,9 +274,9 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
         New-PodeWebModal -Name 'ConfirmRing' -DisplayName 'Approve updates' -SubmitText 'Approve' -Content @(
             New-PodeWebText -Value 'Approve the updates that passed for the next rings? The gate is checked again, so the result may differ slightly from the preview.'
         ) -ScriptBlock {
-            $user = Resolve-PortcullisUser -AuthUser $WebEvent.Auth.User
+            $user = Resolve-CassiniUser -AuthUser $WebEvent.Auth.User
             try {
-                $rows = Invoke-PortcullisRingApproval -Config (Get-PodeState -Name 'Config') -Preview $WebEvent.Session.Data.RingPreview -PreviewId $WebEvent.Data.Value -User $user -Confirm:$false
+                $rows = Invoke-CassiniRingApproval -Config (Get-PodeState -Name 'Config') -Preview $WebEvent.Session.Data.RingPreview -PreviewId $WebEvent.Data.Value -User $user -Confirm:$false
                 # Last approval lists only what was actually approved; held updates stay in the preview.
                 $approvedRows = @($rows | Where-Object ApprovedTo)
                 $approved = $approvedRows.Count
@@ -284,7 +284,7 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
                     # Kept in the session so the result is still here after leaving the page and coming back.
                     # A run that approved nothing leaves the previous last approval in place.
                     $approvedAt = Get-Date
-                    $installs = try { Format-PortcullisInstallTime -Schedule (Get-PodeState -Name 'Schedule') -After $approvedAt } catch { '' }
+                    $installs = try { Format-CassiniInstallTime -Schedule (Get-PodeState -Name 'Schedule') -After $approvedAt } catch { '' }
                     $WebEvent.Session.Data.RingResult = @{
                         When     = '{0:yyyy-MM-dd HH:mm} by {1}' -f $approvedAt, $user
                         Installs = $installs
@@ -296,7 +296,7 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
                 }
 
                 # The preview keeps only what is still pending; what was approved is under Last approval.
-                $pending = @(Select-PortcullisPendingRow -PreviewRow $WebEvent.Session.Data.RingPreviewRows -ApprovalRow $rows)
+                $pending = @(Select-CassiniPendingRow -PreviewRow $WebEvent.Session.Data.RingPreviewRows -ApprovalRow $rows)
                 if ($pending.Count -gt 0) {
                     Update-PodeWebText -Id 'ring_summary' -Value ('Approved {0}. Still pending: {1}, shown below. Preview again once more Pilot computers have installed them, or use Force for an out-of-band update.' -f $approved, $pending.Count)
                     Update-PodeWebTable -Name 'RingPreview' -Data $pending
@@ -331,7 +331,7 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
                 }
 
                 try {
-                    $result = Find-PortcullisUpdate -Config (Get-PodeState -Name 'Config') -Kb $kb
+                    $result = Find-CassiniUpdate -Config (Get-PodeState -Name 'Config') -Kb $kb
                 }
                 catch {
                     $WebEvent.Session.Data.Remove('DeclinePreview')
@@ -379,9 +379,9 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
             New-PodeWebText -Id 'decline_kb'
             New-PodeWebText -Value ' on the upstream? Machines that already installed it keep it until you remove it with DISM (WSUS README, section 8).'
         ) -ScriptBlock {
-            $user = Resolve-PortcullisUser -AuthUser $WebEvent.Auth.User
+            $user = Resolve-CassiniUser -AuthUser $WebEvent.Auth.User
             try {
-                $rows = Invoke-PortcullisDecline -Config (Get-PodeState -Name 'Config') -Preview $WebEvent.Session.Data.DeclinePreview -PreviewId $WebEvent.Data.Value -User $user -Confirm:$false
+                $rows = Invoke-CassiniDecline -Config (Get-PodeState -Name 'Config') -Preview $WebEvent.Session.Data.DeclinePreview -PreviewId $WebEvent.Data.Value -User $user -Confirm:$false
                 Update-PodeWebTable -Name 'DeclineResult' -Data @($rows | Select-Object -Property Kb, Update, Action, NextStep)
                 $declined = @($rows | Where-Object Action -eq 'Declined').Count
                 Show-PodeWebToast -Title 'Decline' -Message "Declined $declined update(s)."
@@ -400,7 +400,7 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
         New-PodeWebCard -Name 'Changes' -DisplayName 'Changes made through the portal' -Content @(
             New-PodeWebParagraph -Value 'Changes run as the portal service account, so WSUS only sees that account. This log records who confirmed each one. Newest first.'
             New-PodeWebTable -Name 'AuditLog' -DisplayName 'Audit log' -Compact -Paginate -PageSize 25 -ScriptBlock {
-                Get-PortcullisAuditLog -Config (Get-PodeState -Name 'Config') -Last 200 |
+                Get-CassiniAuditLog -Config (Get-PodeState -Name 'Config') -Last 200 |
                     Select-Object -Property Time, User, Action, Server, Outcome, Detail
             }
         )

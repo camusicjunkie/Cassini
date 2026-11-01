@@ -1,9 +1,12 @@
-# Portcullis
+# Cassini
 
 A web portal for the two-node WSUS setup (the [WSUS module](https://github.com/camusicjunkie/WSUS)), built
 with [Pode](https://github.com/Badgerati/Pode) and [Pode.Web](https://github.com/Badgerati/Pode.Web). It
 puts the monthly and day-to-day WSUS jobs behind a browser, so they no longer need a PowerShell session on
 an admin workstation. Every change is a preview first, then a confirm, and is recorded in an audit log.
+
+The name comes from the Cassini Division, the gap between Saturn's rings: like the gate between Pilot and the
+other rings, it decides what gets through.
 
 | Page | What it does | WSUS module call |
 |------|--------------|------------------|
@@ -68,16 +71,16 @@ would reach. Times are client local time, as set in the GPO.
 - Network: the portal host to both nodes on 8531.
 - For install times from the ring GPOs: the GroupPolicy module (`Install-WindowsFeature GPMC`). Optional.
 
-**Pode.Web version.** The only stable Pode.Web release is 0.8.3, from February 2023. Portcullis targets
+**Pode.Web version.** The only stable Pode.Web release is 0.8.3, from February 2023. Cassini targets
 1.0.0 (preview3, May 2026), which is what the project is maintained on and which works with current Pode.
-`Portcullis.psd1` pins both as `RequiredModules` (Pode 2.14.1, Pode.Web 1.0.0), so the server stops at
+`Cassini.psd1` pins both as `RequiredModules` (Pode 2.14.1, Pode.Web 1.0.0), so the server stops at
 start-up with a clear error if either is missing or a different version. A manifest can't name a
 prerelease label, so the Pode.Web entry matches any 1.0.0 build; install it with `-AllowPrerelease`. To
 move to a newer version, change the manifest and test first: preview APIs can change.
 
 ## Configuration
 
-Copy `config/portcullis.example.psd1` to `config/portcullis.psd1` (gitignored) and set at least
+Copy `config/cassini.example.psd1` to `config/cassini.psd1` (gitignored) and set at least
 `UpstreamServer`. Every key is documented in the example. An unknown key or a bad value stops the server
 at start-up rather than running half-configured.
 
@@ -104,9 +107,9 @@ Install-Module Pode.Web -RequiredVersion 1.0.0-preview3 -AllowPrerelease -Scope 
 server.ps1                  the Pode.Web pages: layout and wiring only
 server.psd1                 Pode settings (request timeout)
 web.config                  IIS hosting
-config/                     portcullis.example.psd1 (copy to portcullis.psd1)
-public/                     static files Pode serves: portcullis.css (the theme) and portcullis.js
-src/Portcullis/             the logic as a module (requires Pode and Pode.Web; it never calls them), unit-tested
+config/                     cassini.example.psd1 (copy to cassini.psd1)
+public/                     static files Pode serves: cassini.css (the theme) and cassini.js
+src/Cassini/             the logic as a module (requires Pode and Pode.Web; it never calls them), unit-tested
   Public/                   one exported function per file
   Private/                  shared helpers (preview checks, audit writer, formatting)
 dev/                        local run with fake WSUS data
@@ -121,6 +124,6 @@ compatibility), then Pester. Enable the pre-push hook once per clone: `git confi
 
 ## Possible next steps
 
-- Ask the WSUS module for a read-only `Get-WsusUpdate -Kb`, so `Find-PortcullisUpdate` stops duplicating
+- Ask the WSUS module for a read-only `Get-WsusUpdate -Kb`, so `Find-CassiniUpdate` stops duplicating
   `Deny-WsusUpdate`'s exact-match rule.
 - Keycloak (OIDC) sign-in instead of Windows Authentication, if the portal moves to the cluster.

@@ -1,0 +1,84 @@
+BeforeAll { . (Join-Path -Path $PSScriptRoot -ChildPath '..\..\helpers\TestSetup.ps1') }
+AfterAll { Remove-CassiniTestEnvironment }
+
+Describe 'Get-CassiniConfig' {
+    BeforeAll {
+        function Write-Config ([string] $Body) {
+            $path = Join-Path -Path $TestDrive -ChildPath "c-$([guid]::NewGuid()).psd1"
+            Set-Content -Path $path -Value $Body -Encoding UTF8
+            $path
+        }
+    }
+
+    It 'fills the defaults when only UpstreamServer is set' {
+        $config = Get-CassiniConfig -Path (Write-Config "@{ UpstreamServer = 'wsus01' }")
+
+        $config.PSObject.TypeNames | Should -Contain 'Cassini.Config'
+        $config.ReplicaServer | Should -Be ''
+        $config.Port | Should -Be 8531
+        $config.AdminGroup | Should -Be 'res.srv.wsus.admin'
+        $config.Authentication | Should -Be 'IIS'
+        $config.PreviewMaxAgeMinutes | Should -Be 15
+        $config.SessionMinutes | Should -Be 15
+        $config.AuditEventLog | Should -Be 'Required'
+    }
+
+    It 'makes the audit event optional by default only without sign-in' {
+        $config = Get-CassiniConfig -Path (Write-Config "@{ UpstreamServer = 'wsus01'; Authentication = 'None' }")
+        $config.AuditEventLog | Should -Be 'Optional'
+
+        $config = Get-CassiniConfig -Path (Write-Config "@{ UpstreamServer = 'wsus01'; AuditEventLog = 'Optional' }")
+        $config.AuditEventLog | Should -Be 'Optional'
+    }
+
+    It 'keeps values from the file' {
+        $config = Get-CassiniConfig -Path (Write-Config "@{ UpstreamServer = 'wsus01'; ReplicaServer = 'wsus02'; Port = '8530'; Authentication = 'None' }")
+
+        $config.ReplicaServer | Should -Be 'wsus02'
+        $config.Port | Should -Be 8530
+        $config.Port | Should -BeOfType [int]
+        $config.Authentication | Should -Be 'None'
+    }
+
+    It 'throws for a missing file and names the example' {
+        { Get-CassiniConfig -Path (Join-Path -Path $TestDrive -ChildPath 'nope.psd1') } | Should -Throw '*cassini.example.psd1*'
+    }
+
+    It 'throws for <Case>' -ForEach @(
+        @{ Case = 'no UpstreamServer'; Body = "@{ ReplicaServer = 'wsus02' }"; Message = '*UpstreamServer is required*' }
+        @{ Case = 'an unknown key'; Body = "@{ UpstreamServer = 'wsus01'; Upstream = 'x' }"; Message = '*Unknown configuration key*Upstream*' }
+        @{ Case = 'replica equal to upstream'; Body = "@{ UpstreamServer = 'wsus01'; ReplicaServer = 'wsus01' }"; Message = '*must differ*' }
+        @{ Case = 'a bad authentication mode'; Body = "@{ UpstreamServer = 'wsus01'; Authentication = 'Forms' }"; Message = "*'IIS' or 'None'*" }
+        @{ Case = 'IIS without an admin group'; Body = "@{ UpstreamServer = 'wsus01'; AdminGroup = '' }"; Message = '*AdminGroup is required*' }
+        @{ Case = 'a bad port'; Body = "@{ UpstreamServer = 'wsus01'; Port = 70000 }"; Message = '*Port must be a port number*' }
+        @{ Case = 'a bad preview age'; Body = "@{ UpstreamServer = 'wsus01'; PreviewMaxAgeMinutes = 0 }"; Message = '*PreviewMaxAgeMinutes*' }
+        @{ Case = 'a bad session time-out'; Body = "@{ UpstreamServer = 'wsus01'; SessionMinutes = 1 }"; Message = '*SessionMinutes must be 5 to 480*' }
+        @{ Case = 'an unknown ring'; Body = "@{ UpstreamServer = 'wsus01'; Schedule = @{ Canary = @{} } }"; Message = '*Unknown ring(s) in Schedule: Canary*' }
+        @{ Case = 'an unknown ring setting'; Body = "@{ UpstreamServer = 'wsus01'; Schedule = @{ Pilot = @{ Minute = 5 } } }"; Message = '*Unknown setting(s) in Schedule.Pilot: Minute*' }
+        @{ Case = 'a bad install day'; Body = "@{ UpstreamServer = 'wsus01'; Schedule = @{ Pilot = @{ Day = 'Funday' } } }"; Message = '*Schedule.Pilot.Day must be Sunday to Saturday or Everyday*' }
+        @{ Case = 'a bad install hour'; Body = "@{ UpstreamServer = 'wsus01'; Schedule = @{ Pilot = @{ Hour = 24 } } }"; Message = '*Schedule.Pilot.Hour must be 0 to 23*' }
+        @{ Case = 'a bad detection interval'; Body = "@{ UpstreamServer = 'wsus01'; Schedule = @{ Pilot = @{ DetectionHours = 0 } } }"; Message = '*Schedule.Pilot.DetectionHours must be 1 to 48*' }
+        @{ Case = 'a bad audit event setting'; Body = "@{ UpstreamServer = 'wsus01'; AuditEventLog = 'Sometimes' }"; Message = "*'Required' or 'Optional'*" }
+    ) {
+        { Get-CassiniConfig -Path (Write-Config $Body) } | Should -Throw $Message
+    }
+
+    It 'fills the schedule from the WSUS README and merges a partial one' {
+        $config = Get-CassiniConfig -Path (Write-Config "@{ UpstreamServer = 'wsus01' }")
+        @($config.Schedule.Keys) | Should -Be @('Pilot', 'Workstations', 'Servers')
+        $config.Schedule.Workstations.Day | Should -Be 'Wednesday'
+        $config.Schedule.Workstations.Gpo | Should -Be 'WSUS - Workstations'
+        $config.Schedule.Servers.Hour | Should -Be 19
+
+        $config = Get-CassiniConfig -Path (Write-Config "@{ UpstreamServer = 'wsus01'; Schedule = @{ Servers = @{ Day = 'friday'; Hour = '20' } } }")
+        $config.Schedule.Servers.Day | Should -Be 'Friday'
+        $config.Schedule.Servers.Hour | Should -Be 20
+        $config.Schedule.Servers.Gpo | Should -Be 'WSUS - Servers'
+        $config.Schedule.Pilot.Day | Should -Be 'Thursday'
+    }
+
+    It 'allows no admin group when authentication is None' {
+        $config = Get-CassiniConfig -Path (Write-Config "@{ UpstreamServer = 'wsus01'; AdminGroup = ''; Authentication = 'None' }")
+        $config.AdminGroup | Should -Be ''
+    }
+}

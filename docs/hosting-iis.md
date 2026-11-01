@@ -1,4 +1,4 @@
-# Hosting Portcullis in IIS
+# Hosting Cassini in IIS
 
 Pode runs as a separate `powershell.exe` process behind IIS. IIS handles Windows Authentication and
 forwards the signed-in user's token to Pode, which checks the AD group.
@@ -31,20 +31,20 @@ Install-Module Pode.Web -RequiredVersion 1.0.0-preview3 -AllowPrerelease -Reposi
 
 ## 2. Service account
 
-Create a gMSA (for example `gmsa-portcullis$`) and allow only the portal server to retrieve its password.
+Create a gMSA (for example `gmsa-cassini$`) and allow only the portal server to retrieve its password.
 Give it WSUS administrator rights on both nodes through its own group, not `AdminGroup`: the people who
 sign in and the account that acts on WSUS stay separate ([security.md](security.md), step 2).
 
 Folder permissions ([security.md](security.md), step 7): read and execute on the site folder (including
 `config\`; it never writes there), modify on `logs\` in the site folder, and write without delete on the
-audit log folder (`C:\ProgramData\Portcullis` by default).
+audit log folder (`C:\ProgramData\Cassini` by default).
 
 ## 3. Site
 
-1. Copy the staged release (`./build.ps1 -Task Release` puts it in `artifacts/stage/Portcullis`) to,
-   for example, `D:\Sites\Portcullis`.
-2. Copy `config\portcullis.example.psd1` to `config\portcullis.psd1` and edit it.
-3. Create an app pool: **No Managed Code**, identity `CORP\gmsa-portcullis$`, Start Mode AlwaysRunning,
+1. Copy the staged release (`./build.ps1 -Task Release` puts it in `artifacts/stage/Cassini`) to,
+   for example, `D:\Sites\Cassini`.
+2. Copy `config\cassini.example.psd1` to `config\cassini.psd1` and edit it.
+3. Create an app pool: **No Managed Code**, identity `CORP\gmsa-cassini$`, Start Mode AlwaysRunning,
    Idle Time-out 0 (so the first request after a quiet night doesn't wait for PowerShell to start).
 4. Create the site on that pool, HTTPS only: certificate, binding and the Kerberos settings are in
    [security.md](security.md), steps 3 to 6.
@@ -56,7 +56,7 @@ audit log folder (`C:\ProgramData\Portcullis` by default).
 Once, elevated:
 
 ```powershell
-New-EventLog -LogName Application -Source Portcullis
+New-EventLog -LogName Application -Source Cassini
 ```
 
 Each change is then also an Application event (1000 succeeded, 1001 failed) for the Cribl Edge/Splunk

@@ -1,6 +1,6 @@
 # Security
 
-Portcullis can approve updates for every Windows machine that WSUS serves. Whoever controls the portal,
+Cassini can approve updates for every Windows machine that WSUS serves. Whoever controls the portal,
 or the account it runs as, controls what those machines install. This page lists what the portal does
 about that, what the server around it has to do, and the plan for the parts outside this repository.
 
@@ -19,11 +19,11 @@ about that, what the server around it has to do, and the plan for the parts outs
 |--------|---------|-------|
 | Someone outside the admin group uses the portal | Windows Authentication in IIS; only `AdminGroup` members (nested counts) get in | IIS, `server.ps1` |
 | Sign-in turned off by mistake in production | `Authentication = None` refuses to start under IIS and only listens on localhost | `server.ps1` |
-| Another page makes an admin's browser send a change (CSRF) | POSTs that the browser marks as cross-site or same-site, or whose `Origin` is another host, get 403 and are logged | `Test-PortcullisRequestOrigin`, middleware in `server.ps1` |
-| A change made with values tampered with in the browser | Confirm runs the parameters stored in the server-side session; the browser only sends the preview id | `Assert-PortcullisPreview` |
-| An old or replayed confirm | Previews expire after `PreviewMaxAgeMinutes`, can be confirmed once, and must be of the right kind | `Assert-PortcullisPreview` |
-| An arbitrary approval | The portal can only promote rings through the `Approve-WsusRing` gate, decline a KB and start a sync | Portcullis module |
-| Bad input (KB text, numbers) | KB format checked; soak and percent ranges checked before WSUS is called | `Find-PortcullisUpdate`, `server.ps1` |
+| Another page makes an admin's browser send a change (CSRF) | POSTs that the browser marks as cross-site or same-site, or whose `Origin` is another host, get 403 and are logged | `Test-CassiniRequestOrigin`, middleware in `server.ps1` |
+| A change made with values tampered with in the browser | Confirm runs the parameters stored in the server-side session; the browser only sends the preview id | `Assert-CassiniPreview` |
+| An old or replayed confirm | Previews expire after `PreviewMaxAgeMinutes`, can be confirmed once, and must be of the right kind | `Assert-CassiniPreview` |
+| An arbitrary approval | The portal can only promote rings through the `Approve-WsusRing` gate, decline a KB and start a sync | Cassini module |
+| Bad input (KB text, numbers) | KB format checked; soak and percent ranges checked before WSUS is called | `Find-CassiniUpdate`, `server.ps1` |
 | Script injection (XSS) | Pode.Web escapes table cells; Content-Security-Policy allows scripts from the portal only (`script-src 'self'`) | Pode.Web, `server.ps1` |
 | Clickjacking (the portal in a hidden frame) | `frame-ancestors 'none'` and `X-Frame-Options: DENY` | `server.ps1` |
 | Other sites reading portal responses | No CORS headers (Pode.Web's preset, which allowed any origin, is off); `Cross-Origin-Resource-Policy` and `-Opener-Policy` `same-origin` | `server.ps1` |
@@ -31,7 +31,7 @@ about that, what the server around it has to do, and the plan for the parts outs
 | Downgrade to HTTP | HTTPS-only site; `Strict-Transport-Security` for a year | IIS, `server.ps1` |
 | Leaking versions and paths | No `Server` or `X-Powered-By` headers; `Referrer-Policy: no-referrer` | `web.config`, `server.ps1` |
 | Unexpected methods or large bodies | Only GET, HEAD and POST; bodies over 1 MB refused | `web.config` |
-| A change with no record, or a record that is quietly edited | The audit file is written before the change returns, or the change reports a failure; with `AuditEventLog = 'Required'` (the default under IIS) the server will not start without the event source, so every change also reaches the Event Log and Splunk | `Write-PortcullisAudit`, `Assert-PortcullisAuditSource` |
+| A change with no record, or a record that is quietly edited | The audit file is written before the change returns, or the change reports a failure; with `AuditEventLog = 'Required'` (the default under IIS) the server will not start without the event source, so every change also reaches the Event Log and Splunk | `Write-CassiniAudit`, `Assert-CassiniAuditSource` |
 | Reading data through the API | `GET /api/v1/calendar` is read-only, behind the same Windows sign-in, with the same headers; its one parameter must match `yyyy-MM` | `server.ps1` |
 | Dependencies loaded from the internet | Pode.Web serves its own copies of jQuery, Bootstrap and the rest; nothing comes from a CDN | Pode.Web |
 
@@ -84,7 +84,7 @@ Do steps 1 to 8 before the portal goes live; 9 to 12 within the first month and 
   except the management ports you already allow.
 
   ```powershell
-  New-NetFirewallRule -DisplayName 'Portcullis HTTPS' -Direction Inbound -Protocol TCP -LocalPort 443 `
+  New-NetFirewallRule -DisplayName 'Cassini HTTPS' -Direction Inbound -Protocol TCP -LocalPort 443 `
       -RemoteAddress '10.0.10.0/24' -Action Allow -Profile Domain
   ```
 
@@ -100,7 +100,7 @@ Keep "who may use the portal" and "what the portal may do to WSUS" in separate g
 
 - `res.srv.wsus.admin`: the people. `AdminGroup` points here.
 - A resource group for the service account only (for example `res.srv.wsus.portal`), holding
-  `gmsa-portcullis$`. Nest this group into WSUS Administrators on both nodes.
+  `gmsa-cassini$`. Nest this group into WSUS Administrators on both nodes.
 
 The gMSA needs no other rights: not local admin on the nodes or the portal server, no interactive
 logon. Allow only the portal server to retrieve its password (`PrincipalsAllowedToRetrieveManagedPassword`).
@@ -112,8 +112,8 @@ anywhere.
 
 ### 3. Certificate and HTTPS binding
 
-- Choose the name: the server's own FQDN, or an alias such as `portcullis.corp.local` (an A record to
-  the server). An alias needs an SPN: `setspn -S HTTP/portcullis.corp.local <SERVER>`.
+- Choose the name: the server's own FQDN, or an alias such as `cassini.corp.local` (an A record to
+  the server). An alias needs an SPN: `setspn -S HTTP/cassini.corp.local <SERVER>`.
 - Request a certificate with that name in the SAN and the Server Authentication EKU, from the CA that
   issued the WSUS certificates.
 - Bind it on 443 and remove any HTTP binding:
@@ -122,17 +122,17 @@ anywhere.
   Import-Module WebAdministration
 
   $thumbprint = (Get-ChildItem -Path 'Cert:\LocalMachine\My' |
-      Where-Object { $_.DnsNameList.Unicode -contains 'portcullis.corp.local' } |
+      Where-Object { $_.DnsNameList.Unicode -contains 'cassini.corp.local' } |
       Sort-Object -Property NotAfter | Select-Object -Last 1).Thumbprint
 
-  New-WebBinding -Name 'Portcullis' -Protocol https -Port 443
-  (Get-WebBinding -Name 'Portcullis' -Protocol https -Port 443).AddSslCertificate($thumbprint, 'My')
-  Get-WebBinding -Name 'Portcullis' -Protocol http | Remove-WebBinding
+  New-WebBinding -Name 'Cassini' -Protocol https -Port 443
+  (Get-WebBinding -Name 'Cassini' -Protocol https -Port 443).AddSslCertificate($thumbprint, 'My')
+  Get-WebBinding -Name 'Cassini' -Protocol http | Remove-WebBinding
   ```
 
 - Put the renewal date in the same calendar as the WSUS certificates.
 
-**Check:** `https://portcullis.corp.local/` loads with no certificate warning; `http://` does not answer.
+**Check:** `https://cassini.corp.local/` loads with no certificate warning; `http://` does not answer.
 
 ### 4. Kerberos only, with Extended Protection
 
@@ -141,20 +141,20 @@ sign-in from being relayed to the portal:
 
 ```powershell
 $appcmd = "$env:windir\System32\inetsrv\appcmd.exe"
-& $appcmd set config 'Portcullis' -section:system.webServer/security/authentication/windowsAuthentication `
+& $appcmd set config 'Cassini' -section:system.webServer/security/authentication/windowsAuthentication `
     /~"providers" /+"providers.[value='Negotiate:Kerberos']" /commit:apphost
-& $appcmd set config 'Portcullis' -section:system.webServer/security/authentication/windowsAuthentication `
+& $appcmd set config 'Cassini' -section:system.webServer/security/authentication/windowsAuthentication `
     /extendedProtection.tokenChecking:"Require" /commit:apphost
 ```
 
-**Check:** `klist` on an admin workstation shows an `HTTP/portcullis.corp.local` ticket after browsing to
+**Check:** `klist` on an admin workstation shows an `HTTP/cassini.corp.local` ticket after browsing to
 the portal; sign-in still works with no prompt. If it prompts, the SPN or the zone policy (step 5) is
 missing. Don't fall back to NTLM.
 
 ### 5. Browser zone policy
 
 Edge and Chrome only sign in silently with Kerberos to sites in the Local Intranet zone, and a dotted
-name is Internet zone by default. By GPO, add `https://portcullis.corp.local` to the Site to Zone
+name is Internet zone by default. By GPO, add `https://cassini.corp.local` to the Site to Zone
 Assignment List as zone 1, or allow it in the Edge and Chrome `AuthServerAllowlist` policies.
 
 **Check:** no sign-in prompt from a standard admin workstation.
@@ -184,15 +184,15 @@ pages still work after following a link to the portal from another site.
 ### 7. Folder permissions
 
 ```powershell
-$account = 'CORP\gmsa-portcullis$'
-$site = 'D:\Sites\Portcullis'
+$account = 'CORP\gmsa-cassini$'
+$site = 'D:\Sites\Cassini'
 
 # Site and config: read only. Logs: written by IIS (stdout) and Pode.
 icacls $site /inheritance:r /grant:r 'BUILTIN\Administrators:(OI)(CI)F' 'NT AUTHORITY\SYSTEM:(OI)(CI)F' "${account}:(OI)(CI)RX"
 icacls "$site\logs" /grant "${account}:(OI)(CI)M"
 
 # Audit folder: the gMSA writes but cannot delete.
-icacls 'C:\ProgramData\Portcullis' /inheritance:r /grant:r 'BUILTIN\Administrators:(OI)(CI)F' 'NT AUTHORITY\SYSTEM:(OI)(CI)F' "${account}:(OI)(CI)(RX,W)"
+icacls 'C:\ProgramData\Cassini' /inheritance:r /grant:r 'BUILTIN\Administrators:(OI)(CI)F' 'NT AUTHORITY\SYSTEM:(OI)(CI)F' "${account}:(OI)(CI)(RX,W)"
 ```
 
 **Check:** the portal starts and records a sync; the gMSA cannot change files in `config\` or delete
@@ -200,10 +200,10 @@ icacls 'C:\ProgramData\Portcullis' /inheritance:r /grant:r 'BUILTIN\Administrato
 
 ### 8. Event source, log forwarding and alerts
 
-1. Register the event source once, elevated: `New-EventLog -LogName Application -Source Portcullis`.
+1. Register the event source once, elevated: `New-EventLog -LogName Application -Source Cassini`.
    The portal will not start without it.
-2. Forward with Cribl Edge on the portal server: Application events from source `Portcullis` (1000
-   succeeded, 1001 failed), Pode's error log (`logs\portcullis_errors_*.log`, which includes every
+2. Forward with Cribl Edge on the portal server: Application events from source `Cassini` (1000
+   succeeded, 1001 failed), Pode's error log (`logs\cassini_errors_*.log`, which includes every
    refused cross-site request), and the IIS W3C logs (who requested what, with the signed-in user).
 3. Splunk alerts:
 
@@ -221,7 +221,7 @@ icacls 'C:\ProgramData\Portcullis' /inheritance:r /grant:r 'BUILTIN\Administrato
 ### 9. Sign the release, enforce `AllSigned`
 
 - In the internal GitLab pipeline: `./build.ps1 -Task Release`, then sign every `.ps1`, `.psm1` and
-  `.psd1` in `artifacts/stage/Portcullis` with the HSM-backed code-signing certificate, with a timestamp,
+  `.psd1` in `artifacts/stage/Cassini` with the HSM-backed code-signing certificate, with a timestamp,
   then publish the signed folder as the deployable artifact.
 - Pode and Pode.Web from the gallery are not signed with your certificate. Sign them the same way when
   you publish them to the internal gallery, or `AllSigned` will stop the portal starting.
@@ -250,5 +250,5 @@ Before moving either pinned version:
 
 ### 12. Back up config and audit trail
 
-Back up `config\portcullis.psd1` and `C:\ProgramData\Portcullis\audit.log` with the server. Splunk's
+Back up `config\cassini.psd1` and `C:\ProgramData\Cassini\audit.log` with the server. Splunk's
 retention for the forwarded events is the long-term record; set it to your audit retention requirement.

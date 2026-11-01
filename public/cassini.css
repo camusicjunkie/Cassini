@@ -1,0 +1,1299 @@
+/*
+    Cassini theme for Pode.Web (served from public/ by Pode, loaded after Pode.Web's own CSS).
+
+    Pode.Web is Bootstrap 5.3 underneath; its default theme draws boxed grey cards, a dark top bar,
+    heavy table headers and the browser's default font. This file replaces that look with a flatter,
+    lighter one. It only overrides CSS: the pages, elements and their behaviour are Pode.Web's.
+
+    Pode.Web sets body[pode-theme] to 'light' or 'dark' (with Theme Auto it follows the OS), and its
+    theme files set --podeweb-* variables on :root. The variables below are set on body, so they win
+    for everything on the page.
+*/
+
+/* ------------------------------------------------------------------ Tokens */
+
+body[pode-theme] {
+    --cs-font: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    --cs-radius: 10px;
+    --cs-radius-sm: 7px;
+    --cs-rail: 3.75rem;
+    --cs-sidebar: 15rem;
+}
+
+body[pode-theme='light'] {
+    --cs-page: #f6f7f9;
+    --cs-surface: #ffffff;
+    --cs-surface-2: #f8fafc;
+    --cs-hover: #f1f5f9;
+    --cs-border: #e5e7eb;
+    --cs-border-strong: #d1d5db;
+    --cs-text: #111827;
+    --cs-text-2: #4b5563;
+    --cs-text-3: #6b7280;
+    --cs-accent: #2563eb;
+    --cs-accent-hover: #1d4ed8;
+    --cs-accent-soft: #eff4ff;
+    --cs-success: #16a34a;
+    --cs-success-hover: #15803d;
+    --cs-danger: #dc2626;
+    --cs-danger-hover: #b91c1c;
+    --cs-disabled-bg: #f1f5f9;
+    --cs-disabled-border: #e2e8f0;
+    --cs-disabled-text: #64748b;
+    --cs-shadow: 0 1px 2px rgba(16, 24, 40, 0.05);
+    --cs-shadow-lg: 0 12px 32px rgba(16, 24, 40, 0.14);
+    --cs-focus: rgba(37, 99, 235, 0.25);
+}
+
+body[pode-theme='dark'] {
+    --cs-page: #0b0f17;
+    --cs-surface: #111827;
+    --cs-surface-2: #0f1520;
+    --cs-hover: #1a2232;
+    --cs-border: #1f2937;
+    --cs-border-strong: #374151;
+    --cs-text: #e5e7eb;
+    --cs-text-2: #b6bdc8;
+    --cs-text-3: #8b94a3;
+    --cs-accent: #3b82f6;
+    --cs-accent-hover: #60a5fa;
+    --cs-accent-soft: rgba(59, 130, 246, 0.14);
+    --cs-success: #22c55e;
+    --cs-success-hover: #16a34a;
+    --cs-danger: #ef4444;
+    --cs-danger-hover: #dc2626;
+    --cs-disabled-bg: #1a2232;
+    --cs-disabled-border: #263042;
+    --cs-disabled-text: #9aa3b2;
+    --cs-shadow: 0 1px 2px rgba(0, 0, 0, 0.3);
+    --cs-shadow-lg: 0 12px 32px rgba(0, 0, 0, 0.5);
+    --cs-focus: rgba(59, 130, 246, 0.35);
+}
+
+/* Feed the tokens into Pode.Web's own variables, so everything it draws picks them up. */
+body[pode-theme] {
+    --podeweb-font-family: var(--cs-font);
+    --podeweb-page-background-color: var(--cs-page);
+    --podeweb-primary-background-color: var(--cs-surface);
+    --podeweb-secondary-background-color: var(--cs-surface-2);
+    --podeweb-tertiary-background-color: var(--cs-hover);
+    --podeweb-nav-background-color: var(--cs-surface);
+    --podeweb-primary-border-color: var(--cs-border);
+    --podeweb-secondary-border-color: var(--cs-accent);
+    --podeweb-tertiary-border-color: var(--cs-border);
+    --podeweb-nav-border-color: var(--cs-border);
+    --podeweb-primary-text-color: var(--cs-text);
+    --podeweb-secondary-text-color: var(--cs-text-2);
+    --podeweb-tertiary-text-color: var(--cs-text);
+    --podeweb-link-text-color: var(--cs-accent);
+    --podeweb-hover-primary-text-color: var(--cs-accent);
+    --podeweb-nav-text-color: var(--cs-text);
+    --podeweb-nav-hover-text-color: var(--cs-accent);
+    --podeweb-disabled-text-color: var(--cs-disabled-text);
+
+    font-family: var(--cs-font) !important;
+    background-color: var(--cs-page) !important;
+    color: var(--cs-text);
+    -webkit-font-smoothing: antialiased;
+}
+
+/* ----------------------------------------------------------------- Top bar */
+
+body[pode-theme] nav.navbar {
+    background-color: var(--cs-surface) !important;
+    border-bottom: 1px solid var(--cs-border);
+    box-shadow: none !important;
+    min-height: 3.5rem;
+}
+
+body[pode-theme] nav.navbar .navbar-brand {
+    color: var(--cs-text) !important;
+    font-weight: 600;
+    font-size: 1rem;
+    letter-spacing: -0.01em;
+    box-shadow: none !important;
+    background: transparent !important;
+}
+
+/* A plain hamburger for the sidebar toggle, instead of Pode.Web's "menu-open" arrow, and no
+   180-degree flip when the sidebar collapses. \F035C is mdi-menu. */
+button#menu-toggle {
+    color: var(--cs-text-2) !important;
+    border: none !important;
+    box-shadow: none !important;
+    /* Centred over the sidebar icons below it (icon centre is 30px from the left edge). */
+    margin-left: -2px;
+    width: 2.5rem !important;
+    height: 2.5rem;
+    border-radius: var(--cs-radius-sm);
+}
+
+button#menu-toggle:hover {
+    background-color: var(--cs-hover);
+    color: var(--cs-text) !important;
+}
+
+button#menu-toggle span.mdi {
+    font-size: 1.4rem;
+}
+
+button#menu-toggle span.mdi::before {
+    content: "\F035C";
+    transform: none !important;
+}
+
+/* ----------------------------------------------------------------- Sidebar */
+
+body[pode-theme] nav#sidebarMenu {
+    background-color: var(--cs-surface) !important;
+    border-right: 1px solid var(--cs-border);
+    box-shadow: none !important;
+}
+
+/* One geometry for both states: every row is the same height, and each icon sits at the same x
+   whether the sidebar is open or collapsed to the rail. The rail is exactly wide enough for the list
+   padding, the link padding and the icon: 0.5 + 0.75 + 1.25 + 0.75 + 0.5 = 3.75rem. */
+#sidebar-list {
+    padding: 0 0.5rem;
+}
+
+#sidebar-list .nav-item {
+    margin-left: 0 !important;
+}
+
+body[pode-theme] #sidebar-list a.nav-link {
+    color: var(--cs-text-2) !important;
+    border-radius: var(--cs-radius-sm);
+    margin: 2px 0;
+    font-weight: 500;
+    transition: color 0.12s ease;
+}
+
+body[pode-theme] #sidebar-list a.nav-link div {
+    padding: 0 0.75rem;
+    height: 2.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    white-space: nowrap;
+}
+
+body[pode-theme] #sidebar-list a.nav-link .mdi {
+    flex: 0 0 1.25rem;
+    width: 1.25rem;
+    margin-right: 0 !important;
+    color: var(--cs-text-3);
+    transition: color 0.12s ease;
+}
+
+/* Pode.Web's size class (mdi-size-22) sets the glyph size on ::before; use one size everywhere. */
+body[pode-theme] #sidebar-list a.nav-link .mdi::before {
+    font-size: 1.25rem !important;
+    line-height: 1 !important;
+}
+
+/* Hover only changes colour. Pode.Web's own hover adds a background, extra right padding and
+   rounded right corners, which made the row shift; all three are cancelled here. */
+body[pode-theme] #sidebar-list .nav-item.nav-page-item a.nav-link:hover {
+    background-color: transparent !important;
+    padding-right: 0 !important;
+    border-radius: var(--cs-radius-sm) !important;
+    color: var(--cs-accent) !important;
+}
+
+body[pode-theme] #sidebar-list .nav-item.nav-page-item a.nav-link:hover .mdi {
+    color: var(--cs-accent);
+}
+
+body[pode-theme] #sidebar-list a.nav-link.active,
+body[pode-theme] #sidebar-list .nav-item.nav-page-item a.nav-link.active:hover {
+    background-color: var(--cs-accent-soft) !important;
+    color: var(--cs-accent) !important;
+}
+
+body[pode-theme] #sidebar-list a.nav-link.active .mdi {
+    color: var(--cs-accent);
+}
+
+/* Pode's credit: kept, but as a quiet line rather than a boxed panel. */
+body[pode-theme] .footer.powered-by {
+    border: none !important;
+    background: transparent !important;
+    font-size: 0.75rem;
+    opacity: 0.7;
+}
+
+body[pode-theme] .footer.powered-by .mdi-heart {
+    color: var(--cs-text-3) !important;
+}
+
+/* Open sidebar: a fixed width instead of Bootstrap's share of the window (a sixth on wide screens),
+   which got too narrow for the page names around 1024px. */
+@media (min-width: 768px) {
+    nav#sidebarMenu:not(.hide) {
+        width: var(--cs-sidebar) !important;
+        max-width: var(--cs-sidebar) !important;
+        flex: 0 0 var(--cs-sidebar) !important;
+    }
+
+    main[role='main']:not(.fullscreen) {
+        margin-left: var(--cs-sidebar) !important;
+        width: calc(100% - var(--cs-sidebar)) !important;
+        max-width: calc(100% - var(--cs-sidebar)) !important;
+        flex: 0 0 calc(100% - var(--cs-sidebar)) !important;
+    }
+}
+
+/* Collapsed sidebar: Pode.Web hides it completely (.hide) and widens the page (.fullscreen).
+   Keep a narrow rail with the page icons instead. Phones keep Pode.Web's own collapse menu. */
+@media (min-width: 768px) {
+    nav#sidebarMenu.hide {
+        display: block !important;
+        width: var(--cs-rail) !important;
+        max-width: var(--cs-rail) !important;
+        flex: 0 0 var(--cs-rail) !important;
+    }
+
+    /* Same list and link padding as when open, so icons don't move; only the page names go.
+       The name is a bare text node next to the icon, so hide it with font-size 0. */
+    nav#sidebarMenu.hide #sidebar-list a.nav-link div {
+        font-size: 0;
+        gap: 0;
+    }
+
+    nav#sidebarMenu.hide .footer.powered-by,
+    nav#sidebarMenu.hide .input-group {
+        display: none !important;
+    }
+
+    main[role='main'].fullscreen {
+        margin-left: var(--cs-rail) !important;
+        width: calc(100% - var(--cs-rail)) !important;
+        max-width: calc(100% - var(--cs-rail)) !important;
+        flex: 0 0 calc(100% - var(--cs-rail)) !important;
+    }
+}
+
+/* -------------------------------------------------------------- Page title */
+
+body[pode-theme] #pode-page-title {
+    border-bottom: none !important;
+    padding-top: 1.75rem !important;
+    margin-bottom: 0.75rem !important;
+}
+
+body[pode-theme] #pode-page-title h1 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    color: var(--cs-text);
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+body[pode-theme] #pode-page-title .pode-page-title-icon {
+    font-size: 1.35rem;
+    color: var(--cs-accent);
+    background-color: var(--cs-accent-soft);
+    border-radius: var(--cs-radius-sm);
+    width: 2.25rem;
+    height: 2.25rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* ------------------------------------------------------------------- Cards */
+
+body[pode-theme] .card.pode-card {
+    background-color: var(--cs-surface) !important;
+    border: 1px solid var(--cs-border) !important;
+    border-radius: var(--cs-radius) !important;
+    box-shadow: var(--cs-shadow);
+    margin-bottom: 1.25rem;
+    overflow: hidden;
+}
+
+body[pode-theme] .card.pode-card > .card-header {
+    background-color: transparent !important;
+    border-bottom: 1px solid var(--cs-border) !important;
+    padding: 0.85rem 1.25rem !important;
+}
+
+body[pode-theme] .card.pode-card > .card-header h5 {
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin: 0;
+    color: var(--cs-text);
+}
+
+body[pode-theme] .card.pode-card > .card-header .btn-toolbar {
+    margin: 0 !important;
+}
+
+body[pode-theme] .card.pode-card > .card-body {
+    padding: 1.25rem !important;
+    color: var(--cs-text-2);
+}
+
+/* Collapse button: a chevron instead of Pode.Web's eye. Pode.Web swaps the class between
+   eye-outline (expanded) and eye-off-outline (collapsed); show those as chevron-up and -down. */
+body[pode-theme] .pode-card-collapse {
+    border: none !important;
+    background: transparent !important;
+    color: var(--cs-text-3) !important;
+    border-radius: var(--cs-radius-sm) !important;
+    padding: 0.2rem 0.35rem !important;
+    box-shadow: none !important;
+}
+
+body[pode-theme] .pode-card-collapse:hover {
+    background-color: var(--cs-hover) !important;
+    color: var(--cs-text) !important;
+}
+
+.pode-card-collapse .mdi-eye-outline::before {
+    content: "\F0143";
+}
+
+.pode-card-collapse .mdi-eye-off-outline::before {
+    content: "\F0140";
+}
+
+/* --------------------------------------------------------------- Paragraphs */
+
+body[pode-theme] .card-body p.text-start {
+    color: var(--cs-text-3);
+    margin-bottom: 1rem;
+    line-height: 1.55;
+}
+
+/* ------------------------------------------------------------------ Tables */
+
+body[pode-theme] .table {
+    --bs-table-bg: transparent;
+    --bs-table-striped-bg: transparent;
+    --bs-table-hover-bg: var(--cs-hover);
+    --bs-table-color: var(--cs-text);
+    --bs-table-striped-color: var(--cs-text);
+    --bs-table-hover-color: var(--cs-text);
+    margin-bottom: 0.5rem;
+    color: var(--cs-text);
+}
+
+body[pode-theme] .table > thead th {
+    background-color: var(--cs-surface-2) !important;
+    color: var(--cs-text-3) !important;
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+    border-bottom: 1px solid var(--cs-border) !important;
+    border-top: none !important;
+    padding: 0.6rem 0.55rem !important;
+    vertical-align: bottom;
+}
+
+body[pode-theme] .table > tbody td {
+    border-color: var(--cs-border) !important;
+    padding: 0.6rem 0.55rem !important;
+    vertical-align: middle;
+    background-color: transparent !important;
+}
+
+body[pode-theme] .table > tbody tr:last-child td {
+    border-bottom: none !important;
+}
+
+body[pode-theme] .table-responsive {
+    border: 1px solid var(--cs-border);
+    border-radius: var(--cs-radius-sm);
+}
+
+/* Pode.Web sets word-break: break-word on every cell, which splits short values such as
+   "Upstream" or "Passed" across lines in narrow columns. Keep words whole; tables sit in a
+   .table-responsive wrapper, so a wide table scrolls sideways instead. */
+table tbody td {
+    word-break: normal;
+}
+
+/* Long values without spaces (audit JSON) may still wrap anywhere. */
+table tbody td[pode-column='Detail'] {
+    word-break: break-word;
+    min-width: 20rem;
+    font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+    font-size: 0.78rem;
+    color: var(--cs-text-2);
+}
+
+/* Short identifiers never wrap. */
+table tbody td[pode-column='Node'],
+table tbody td[pode-column='Server'],
+table tbody td[pode-column='Role'],
+table tbody td[pode-column='Kb'],
+table tbody td[pode-column='Gate'],
+table tbody td[pode-column='Time'],
+table tbody td[pode-column='LastSync'],
+table tbody td[pode-column='Arrived'] {
+    white-space: nowrap;
+}
+
+table tbody td[pode-column='Kb'],
+table tbody td[pode-column='Server'] {
+    font-family: ui-monospace, 'Cascadia Mono', Consolas, monospace;
+    font-size: 0.8rem;
+}
+
+/* Tables filled by a form or button (previews and results) have nothing to refresh. */
+div[role='table']:has(table[pode-dynamic='false']) .pode-table-refresh {
+    display: none !important;
+}
+
+body[pode-theme] .pode-table-refresh,
+body[pode-theme] .pode-table-export {
+    border: none !important;
+    background: transparent !important;
+    color: var(--cs-text-3) !important;
+    box-shadow: none !important;
+}
+
+body[pode-theme] .pode-table-refresh:hover,
+body[pode-theme] .pode-table-export:hover {
+    background-color: var(--cs-hover) !important;
+    color: var(--cs-text) !important;
+}
+
+/* ----------------------------------------------------------------- Buttons */
+
+body[pode-theme] .btn.pode-button,
+body[pode-theme] .pode-form > .btn,
+body[pode-theme] .modal-footer .btn {
+    border-radius: var(--cs-radius-sm) !important;
+    font-weight: 500;
+    font-size: 0.875rem;
+    padding: 0.45rem 0.95rem;
+    box-shadow: none !important;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    transition: background-color 0.12s ease, border-color 0.12s ease, color 0.12s ease;
+}
+
+body[pode-theme] .btn.pode-button .mdi {
+    margin-right: 0 !important;
+    font-size: 1rem;
+}
+
+/* Buttons placed next to each other touch by default. */
+.pode-button + .pode-button {
+    margin-left: 0.5rem;
+}
+
+/* Primary (Pode.Web's blue, form submit and modal submit). */
+body[pode-theme] .btn.btn-primary,
+body[pode-theme] .btn.pode-inbuilt-primary-theme {
+    background-color: var(--cs-accent) !important;
+    border: 1px solid var(--cs-accent) !important;
+    color: #fff !important;
+}
+
+body[pode-theme] .btn.btn-primary:hover,
+body[pode-theme] .btn.pode-inbuilt-primary-theme:hover {
+    background-color: var(--cs-accent-hover) !important;
+    border-color: var(--cs-accent-hover) !important;
+}
+
+body[pode-theme] .btn.btn-success {
+    background-color: var(--cs-success) !important;
+    border: 1px solid var(--cs-success) !important;
+    color: #fff !important;
+}
+
+body[pode-theme] .btn.btn-success:hover {
+    background-color: var(--cs-success-hover) !important;
+}
+
+body[pode-theme] .btn.btn-danger {
+    background-color: var(--cs-danger) !important;
+    border: 1px solid var(--cs-danger) !important;
+    color: #fff !important;
+}
+
+body[pode-theme] .btn.btn-danger:hover {
+    background-color: var(--cs-danger-hover) !important;
+}
+
+/* Secondary (modal Close). */
+body[pode-theme] .btn.btn-secondary,
+body[pode-theme] .btn.pode-inbuilt-secondary-theme {
+    background-color: var(--cs-surface) !important;
+    border: 1px solid var(--cs-border-strong) !important;
+    color: var(--cs-text) !important;
+}
+
+body[pode-theme] .btn.btn-secondary:hover,
+body[pode-theme] .btn.pode-inbuilt-secondary-theme:hover {
+    background-color: var(--cs-hover) !important;
+}
+
+/* Buttons that can't be pressed: a near-white fill with readable text, instead of Bootstrap's
+   faded copy of the button colour. Works for every colour, including green and red. */
+body[pode-theme] .btn:disabled,
+body[pode-theme] .btn.disabled {
+    background-color: var(--cs-disabled-bg) !important;
+    border: 1px solid var(--cs-disabled-border) !important;
+    color: var(--cs-disabled-text) !important;
+    opacity: 1 !important;
+    cursor: not-allowed;
+}
+
+body[pode-theme] .btn:disabled .mdi,
+body[pode-theme] .btn.disabled .mdi {
+    color: var(--cs-disabled-text) !important;
+}
+
+/* ------------------------------------------------------------------ Forms */
+
+body[pode-theme] .col-form-label {
+    color: var(--cs-text);
+    font-weight: 500;
+}
+
+body[pode-theme] .form-control,
+body[pode-theme] .form-select {
+    background-color: var(--cs-surface) !important;
+    border: 1px solid var(--cs-border-strong) !important;
+    border-radius: var(--cs-radius-sm) !important;
+    color: var(--cs-text) !important;
+    padding: 0.45rem 0.75rem;
+    max-width: 22rem;
+    box-shadow: none !important;
+}
+
+body[pode-theme] .form-control:focus,
+body[pode-theme] .form-select:focus {
+    border-color: var(--cs-accent) !important;
+    box-shadow: 0 0 0 3px var(--cs-focus) !important;
+}
+
+body[pode-theme] .form-check-input {
+    cursor: pointer;
+}
+
+body[pode-theme] .form-switch .form-check-input {
+    width: 2.25rem;
+    height: 1.2rem;
+    border-color: var(--cs-border-strong);
+    background-color: var(--cs-hover);
+}
+
+body[pode-theme] .form-check-input:checked {
+    background-color: var(--cs-accent) !important;
+    border-color: var(--cs-accent) !important;
+}
+
+body[pode-theme] .form-check-input:focus {
+    box-shadow: 0 0 0 3px var(--cs-focus) !important;
+}
+
+/* ----------------------------------------------------------------- Modals */
+
+body[pode-theme] .modal-content {
+    background-color: var(--cs-surface) !important;
+    border: 1px solid var(--cs-border) !important;
+    border-radius: 14px !important;
+    box-shadow: var(--cs-shadow-lg) !important;
+    color: var(--cs-text);
+}
+
+body[pode-theme] .modal-header,
+body[pode-theme] .modal-footer {
+    border-color: var(--cs-border) !important;
+    border-width: 1px !important;
+    padding: 1rem 1.25rem;
+}
+
+body[pode-theme] .modal-footer {
+    background-color: var(--cs-surface-2);
+    border-radius: 0 0 14px 14px;
+}
+
+body[pode-theme] .modal-title {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+body[pode-theme] .modal-body {
+    padding: 1.25rem;
+    color: var(--cs-text-2);
+    line-height: 1.55;
+}
+
+/* ----------------------------------------------------------------- Toasts */
+
+body[pode-theme] .toast {
+    border-radius: var(--cs-radius) !important;
+    border: 1px solid var(--cs-border) !important;
+    box-shadow: var(--cs-shadow-lg) !important;
+    background-color: var(--cs-surface) !important;
+    color: var(--cs-text) !important;
+}
+
+body[pode-theme] .toast-header {
+    background-color: var(--cs-surface-2) !important;
+    color: var(--cs-text) !important;
+    border-bottom: 1px solid var(--cs-border) !important;
+}
+
+/* -------------------------------------------------------------- Pagination */
+
+body[pode-theme] nav[role='pagination'] .page-link,
+body[pode-theme] div[role='table'] select {
+    border-radius: var(--cs-radius-sm) !important;
+    border-color: var(--cs-border) !important;
+    background-color: var(--cs-surface) !important;
+    color: var(--cs-text-2) !important;
+}
+
+/* ------------------------------------------------------------- Refinements */
+
+/* Free-text columns get room, so they don't collapse to a letter per line next to nowrap columns. */
+table tbody td[pode-column='Note'] {
+    min-width: 10rem;
+}
+
+table tbody td[pode-column='Reason'],
+table tbody td[pode-column='NextStep'] {
+    min-width: 16rem;
+}
+
+table tbody td[pode-column='Update'] {
+    min-width: 18rem;
+}
+
+/* A table with no rows yet (before a preview or lookup) shows nothing rather than bare headers. */
+div[role='table']:not(:has(tbody tr)) .table-responsive {
+    display: none;
+}
+
+/* Result cards appear once there is something to show. */
+#card_result:not(:has(tbody tr)),
+#card_declined:not(:has(tbody tr)) {
+    display: none;
+}
+
+/* Space between a summary line and the table under it. */
+div[role='table'] {
+    margin-top: 0.6rem;
+}
+
+/* Icons in buttons sit on the text's centre line. Pode.Web draws the glyph at a fixed 24px and
+   pushes it 4px down (position: relative; top: 4px); size it to the text and undo the push. */
+body[pode-theme] .btn .mdi {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    line-height: 1;
+    height: auto;
+}
+
+body[pode-theme] .btn .mdi::before {
+    font-size: 1.1rem !important;
+    line-height: 1 !important;
+    height: auto !important;
+    position: static !important;
+    top: auto !important;
+    vertical-align: 0;
+}
+
+/* Pode.Web's breadcrumb bar is empty on every page here; drop its space. */
+nav#pode-breadcrumb:not(:has(li)) {
+    display: none;
+}
+
+/* Phones: Pode.Web opens the sidebar with its own toggler (Bootstrap collapse); the desktop
+   toggle above only drives the rail, so hide it there and give the phone one the same look. */
+@media (max-width: 767.98px) {
+    button#menu-toggle {
+        display: none !important;
+    }
+
+    body[pode-theme] nav.navbar .navbar-toggler {
+        border: none !important;
+        box-shadow: none !important;
+        right: 0.5rem;
+        top: 0.5rem;
+        padding: 0.4rem 0.5rem;
+    }
+
+    /* Pode.Web drops the phone menu 5rem down, leaving a strip; start it under the top bar. */
+    body[pode-theme] nav#sidebarMenu.sidebar {
+        top: 3.5rem;
+    }
+}
+
+/* Buttons under a table or summary line get room from the box above them. */
+.card-body > span + .pode-button,
+.card-body > span + span + .pode-button {
+    margin-top: 1rem;
+}
+
+/* ------------------------------------------------------------ Theme toggle */
+
+/* Added to the top bar by cassini.js: switches between light and dark. */
+#cs-theme-toggle {
+    margin-left: auto;
+    margin-right: 0.75rem;
+    width: 2.5rem;
+    height: 2.5rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: var(--cs-radius-sm);
+    background: transparent;
+    color: var(--cs-text-2);
+    font-size: 1.25rem;
+    line-height: 1;
+}
+
+#cs-theme-toggle:hover {
+    background-color: var(--cs-hover);
+    color: var(--cs-text);
+}
+
+#cs-theme-toggle:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--cs-focus);
+}
+
+@media (max-width: 767.98px) {
+    /* Sits to the left of Pode.Web's phone menu button. */
+    #cs-theme-toggle {
+        position: absolute;
+        right: 3.75rem;
+        top: 0.5rem;
+        margin: 0;
+    }
+}
+
+/* ------------------------------------------------------- Table control row */
+
+/* Refresh, page-size and page links sit in a row under the table. Pode.Web puts it flush against the
+   table's bottom edge; give it room and line its parts up. */
+div[role='table'] > div[role='controls'] {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-top: 0.75rem;
+}
+
+div[role='table'] > div[role='controls']:empty {
+    display: none;
+}
+
+div[role='table'] > div[role='controls'] .btn-group {
+    margin: 0 !important;
+}
+
+body[pode-theme] div[role='table'] nav[role='pagination'] {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 0 0 0 auto;
+    float: none;
+}
+
+body[pode-theme] div[role='table'] nav[role='pagination'] .pagination {
+    margin: 0;
+}
+
+body[pode-theme] div[role='table'] nav[role='pagination'] input.page-size {
+    /* Pode.Web gives it a right margin, which floated it in from the table's edge. */
+    margin: 0 !important;
+    width: 4.5rem;
+    height: 2rem;
+    padding: 0.25rem 0.5rem;
+    font-size: 0.85rem;
+}
+
+/* The control row's boxes line up with the table's edges: refresh flush left, page size (and page
+   links, when there is more than one page) flush right. Pode.Web leaves an empty page-links list
+   after the page-size box, which pushed the box in from the right edge. */
+body[pode-theme] div[role='table'] nav[role='pagination'] ul.pagination:empty {
+    display: none;
+}
+
+/* Refresh as a bordered box the same height as the page-size box, so its edge (not just its icon)
+   sits on the table's left edge. */
+body[pode-theme] div[role='table'] > div[role='controls'] .pode-table-refresh {
+    width: 2rem;
+    height: 2rem;
+    padding: 0 !important;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid var(--cs-border-strong) !important;
+    border-radius: var(--cs-radius-sm) !important;
+}
+
+body[pode-theme] div[role='table'] > div[role='controls'] .pode-table-refresh .mdi::before {
+    font-size: 1rem !important;
+    position: static !important;
+    top: auto !important;
+}
+
+/* Page links match the 2rem height of the refresh and page-size boxes, so the row lines up. */
+body[pode-theme] div[role='table'] nav[role='pagination'] .page-link {
+    height: 2rem;
+    min-width: 2rem;
+    padding: 0 0.6rem;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.85rem;
+    line-height: 1;
+}
+
+/* ------------------------------------------------------------------ Patch calendar
+   Drawn by cassini.js into #cs-calendar on the Calendar page. One colour per kind of event and
+   per ring, the same in the grid, the day panel and the legend. */
+body[pode-theme='light'] {
+    --cs-cal-release: #7c3aed;
+    --cs-cal-release-soft: #f3e8ff;
+    --cs-cal-action: #2563eb;
+    --cs-cal-action-soft: #eff4ff;
+    --cs-cal-auto: #64748b;
+    --cs-cal-auto-soft: #f1f5f9;
+    --cs-cal-pilot: #d97706;
+    --cs-cal-pilot-soft: #fef3c7;
+    --cs-cal-workstations: #0d9488;
+    --cs-cal-workstations-soft: #ccfbf1;
+    --cs-cal-servers: #4f46e5;
+    --cs-cal-servers-soft: #e0e7ff;
+    --cs-cal-warn-bg: #fffbeb;
+    --cs-cal-warn-border: #fcd34d;
+    --cs-cal-warn-text: #92400e;
+}
+
+body[pode-theme='dark'] {
+    --cs-cal-release: #a78bfa;
+    --cs-cal-release-soft: rgba(167, 139, 250, 0.16);
+    --cs-cal-action: #60a5fa;
+    --cs-cal-action-soft: rgba(96, 165, 250, 0.16);
+    --cs-cal-auto: #94a3b8;
+    --cs-cal-auto-soft: rgba(148, 163, 184, 0.14);
+    --cs-cal-pilot: #fbbf24;
+    --cs-cal-pilot-soft: rgba(251, 191, 36, 0.14);
+    --cs-cal-workstations: #2dd4bf;
+    --cs-cal-workstations-soft: rgba(45, 212, 191, 0.14);
+    --cs-cal-servers: #818cf8;
+    --cs-cal-servers-soft: rgba(129, 140, 248, 0.16);
+    --cs-cal-warn-bg: rgba(251, 191, 36, 0.1);
+    --cs-cal-warn-border: rgba(251, 191, 36, 0.35);
+    --cs-cal-warn-text: #fcd34d;
+}
+
+.cs-calendar .kind-release { --cs-cal-c: var(--cs-cal-release); --cs-cal-soft: var(--cs-cal-release-soft); }
+.cs-calendar .kind-action { --cs-cal-c: var(--cs-cal-action); --cs-cal-soft: var(--cs-cal-action-soft); }
+.cs-calendar .kind-auto { --cs-cal-c: var(--cs-cal-auto); --cs-cal-soft: var(--cs-cal-auto-soft); }
+.cs-calendar .ring-pilot { --cs-cal-c: var(--cs-cal-pilot); --cs-cal-soft: var(--cs-cal-pilot-soft); }
+.cs-calendar .ring-workstations { --cs-cal-c: var(--cs-cal-workstations); --cs-cal-soft: var(--cs-cal-workstations-soft); }
+.cs-calendar .ring-servers { --cs-cal-c: var(--cs-cal-servers); --cs-cal-soft: var(--cs-cal-servers-soft); }
+
+/* The raw element sits in a span; let the calendar take the full card width. */
+span[pode-object='raw']:has(> .cs-calendar) {
+    display: block;
+}
+
+.cs-calendar {
+    display: block;
+    color: var(--cs-text);
+    /* Pode.Web breaks words anywhere inside cards; keep them whole here. */
+    word-break: normal;
+}
+
+.cs-cal-loading,
+.cs-cal-error {
+    margin: 0.5rem 0;
+    color: var(--cs-text-2);
+}
+
+.cs-cal-error {
+    color: var(--cs-danger);
+}
+
+.cs-cal-toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.75rem;
+    margin-bottom: 0.75rem;
+}
+
+.cs-cal-nav {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.cs-calendar .cs-cal-title {
+    margin: 0;
+    min-width: 10.5rem;
+    text-align: center;
+    font-size: 1.15rem;
+    font-weight: 600;
+    color: var(--cs-text);
+}
+
+.cs-cal-step,
+.cs-cal-today {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    height: 2rem;
+    border: 1px solid var(--cs-border-strong);
+    border-radius: var(--cs-radius-sm);
+    background: var(--cs-surface);
+    color: var(--cs-text);
+    font: inherit;
+    font-size: 0.875rem;
+    cursor: pointer;
+}
+
+.cs-cal-step {
+    width: 2rem;
+    padding: 0;
+    font-size: 1.15rem;
+}
+
+.cs-cal-today {
+    padding: 0 0.85rem;
+}
+
+.cs-cal-step:hover,
+.cs-cal-today:hover:not(:disabled) {
+    background: var(--cs-hover);
+}
+
+.cs-cal-today:disabled {
+    color: var(--cs-disabled-text);
+    background: var(--cs-disabled-bg);
+    border-color: var(--cs-disabled-border);
+    cursor: default;
+}
+
+.cs-cal-step:focus-visible,
+.cs-cal-today:focus-visible,
+.cs-cal-day:focus-visible {
+    outline: none;
+    box-shadow: 0 0 0 3px var(--cs-focus);
+}
+
+.cs-cal-warning {
+    display: flex;
+    gap: 0.5rem;
+    align-items: flex-start;
+    margin-bottom: 0.75rem;
+    padding: 0.55rem 0.75rem;
+    border: 1px solid var(--cs-cal-warn-border);
+    border-radius: var(--cs-radius-sm);
+    background: var(--cs-cal-warn-bg);
+    color: var(--cs-cal-warn-text);
+    font-size: 0.875rem;
+}
+
+.cs-cal-body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 18rem;
+    gap: 1rem;
+    align-items: start;
+}
+
+.cs-cal-grid {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    border: 1px solid var(--cs-border);
+    border-radius: var(--cs-radius);
+    overflow: hidden;
+    background: var(--cs-border);
+    gap: 1px;
+}
+
+.cs-cal-weekday {
+    padding: 0.4rem 0.5rem;
+    background: var(--cs-surface-2);
+    color: var(--cs-text-3);
+    font-size: 0.75rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.cs-cal-day {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    min-height: 6.25rem;
+    min-width: 0;
+    padding: 0.35rem 0.4rem 0.45rem;
+    border: 0;
+    background: var(--cs-surface);
+    color: var(--cs-text);
+    font: inherit;
+    text-align: left;
+    cursor: pointer;
+}
+
+.cs-cal-day:hover {
+    background: var(--cs-hover);
+}
+
+.cs-cal-day.is-outside {
+    background: var(--cs-surface-2);
+    color: var(--cs-text-3);
+}
+
+.cs-cal-day.is-selected {
+    box-shadow: inset 0 0 0 2px var(--cs-accent);
+}
+
+.cs-cal-num {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    align-self: flex-start;
+    min-width: 1.6rem;
+    height: 1.6rem;
+    margin-bottom: 0.15rem;
+    border-radius: 999px;
+    font-size: 0.85rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.cs-cal-day.is-today .cs-cal-num {
+    background: var(--cs-accent);
+    color: #fff;
+    font-weight: 600;
+}
+
+.cs-cal-chips {
+    display: flex;
+    flex-direction: column;
+    gap: 0.2rem;
+    min-width: 0;
+}
+
+.cs-cal-chip {
+    display: block;
+    min-width: 0;
+    padding: 0.1rem 0.35rem;
+    border-left: 3px solid var(--cs-cal-c);
+    border-radius: 4px;
+    background: var(--cs-cal-soft);
+    color: var(--cs-text);
+    font-size: 0.72rem;
+    line-height: 1.3;
+    /* Up to two lines, then an ellipsis. */
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    overflow: hidden;
+    overflow-wrap: break-word;
+}
+
+.cs-cal-chip-time {
+    margin-right: 0.1rem;
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+}
+
+.cs-cal-side {
+    padding: 0.9rem 1rem;
+    border: 1px solid var(--cs-border);
+    border-radius: var(--cs-radius);
+    background: var(--cs-surface-2);
+}
+
+.cs-calendar .cs-cal-side-title {
+    margin: 0 0 0.6rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--cs-text);
+}
+
+.cs-cal-empty {
+    margin: 0 0 0.6rem;
+    color: var(--cs-text-3);
+    font-size: 0.875rem;
+}
+
+.cs-cal-item {
+    margin-bottom: 0.6rem;
+    padding: 0.5rem 0.65rem;
+    border-left: 3px solid var(--cs-cal-c);
+    border-radius: var(--cs-radius-sm);
+    background: var(--cs-surface);
+}
+
+.cs-calendar .cs-cal-upcoming {
+    margin: 0.2rem 0 0.45rem;
+    color: var(--cs-text-3);
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.cs-cal-item-date {
+    margin-top: 0.15rem;
+    color: var(--cs-text-3);
+    font-size: 0.78rem;
+}
+
+.cs-cal-item-head {
+    display: flex;
+    justify-content: space-between;
+    color: var(--cs-text-3);
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.cs-cal-item-time {
+    color: var(--cs-text);
+    font-variant-numeric: tabular-nums;
+}
+
+.cs-cal-item-title {
+    margin-top: 0.1rem;
+    font-weight: 600;
+}
+
+.cs-cal-item-detail {
+    margin-top: 0.15rem;
+    color: var(--cs-text-2);
+    font-size: 0.85rem;
+}
+
+.cs-cal-windows {
+    margin-top: 0.9rem;
+    padding-top: 0.75rem;
+    border-top: 1px solid var(--cs-border);
+}
+
+.cs-calendar .cs-cal-windows h4 {
+    margin: 0 0 0.45rem;
+    color: var(--cs-text-3);
+    font-size: 0.72rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.cs-cal-window {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    column-gap: 0.5rem;
+    margin-bottom: 0.4rem;
+    padding-left: 0.55rem;
+    border-left: 3px solid var(--cs-cal-c);
+    font-size: 0.85rem;
+}
+
+.cs-cal-window-ring {
+    font-weight: 600;
+}
+
+.cs-cal-window-when {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.cs-cal-window-source {
+    grid-column: 1 / -1;
+    color: var(--cs-text-3);
+    font-size: 0.75rem;
+}
+
+.cs-cal-legend {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.4rem 1rem;
+    margin-top: 0.75rem;
+    color: var(--cs-text-2);
+    font-size: 0.8rem;
+}
+
+.cs-cal-legend-item {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+}
+
+.cs-cal-dot {
+    width: 0.65rem;
+    height: 0.65rem;
+    border-radius: 3px;
+    background: var(--cs-cal-c);
+}
+
+@media (max-width: 1279.98px) {
+    .cs-cal-body {
+        grid-template-columns: minmax(0, 1fr);
+    }
+}
+
+/* Phones: the grid shows a dot per event; the day panel below has the details. */
+@media (max-width: 767.98px) {
+    .cs-cal-toolbar {
+        flex-wrap: wrap;
+    }
+
+    .cs-calendar .cs-cal-title {
+        min-width: 8.5rem;
+        font-size: 1rem;
+    }
+
+    .cs-cal-weekday {
+        padding: 0.35rem 0;
+        text-align: center;
+        font-size: 0.68rem;
+        letter-spacing: 0;
+    }
+
+    .cs-cal-day {
+        align-items: center;
+        min-height: 3.4rem;
+        padding: 0.25rem 0.1rem;
+    }
+
+    .cs-cal-num {
+        align-self: center;
+    }
+
+    .cs-cal-chips {
+        flex-direction: row;
+        flex-wrap: wrap;
+        justify-content: center;
+        gap: 0.15rem;
+    }
+
+    .cs-cal-chip {
+        display: block;
+        width: 0.45rem;
+        height: 0.45rem;
+        padding: 0;
+        border: 0;
+        border-radius: 999px;
+        background: var(--cs-cal-c);
+    }
+
+    .cs-cal-chip-time,
+    .cs-cal-chip-title {
+        display: none;
+    }
+}

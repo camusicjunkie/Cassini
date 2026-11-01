@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Build script for Portcullis: analyse, test and check a release. CI only calls this script.
+    Build script for Cassini: analyse, test and check a release. CI only calls this script.
 
 .DESCRIPTION
     Tasks:
@@ -11,7 +11,7 @@
       All      Analyze, then Test.
       Release  Checks a release is ready (manifest version equals the vX.Y.Z tag on HEAD, CHANGELOG has
                a section for it, working tree clean) and stages the deployable site (server.ps1, server.psd1,
-               web.config, config/portcullis.example.psd1, public, src/Portcullis) to artifacts/stage/Portcullis.
+               web.config, config/cassini.example.psd1, public, src/Cassini) to artifacts/stage/Cassini.
                It never deploys; deployment is manual (docs/hosting-iis.md).
 
     Pester and PSScriptAnalyzer versions are pinned below and installed for the current user if missing.
@@ -34,8 +34,8 @@ $PesterVersion = '5.7.1'
 $ScriptAnalyzerVersion = '1.24.0'
 
 $repoRoot = $PSScriptRoot
-$modulePath = Join-Path $repoRoot 'src\Portcullis'
-$manifestPath = Join-Path $modulePath 'Portcullis.psd1'
+$modulePath = Join-Path $repoRoot 'src\Cassini'
+$manifestPath = Join-Path $modulePath 'Cassini.psd1'
 $artifacts = Join-Path $repoRoot 'artifacts'
 
 function Import-PinnedModule {
@@ -127,19 +127,19 @@ function Invoke-Release {
         throw 'The working tree is not clean.'
     }
 
-    $stage = Join-Path $artifacts 'stage\Portcullis'
+    $stage = Join-Path $artifacts 'stage\Cassini'
     if (Test-Path -Path $stage) { Remove-Item -Path $stage -Recurse -Force }
-    $null = New-Item -ItemType Directory -Path (Join-Path $stage 'src\Portcullis') -Force
+    $null = New-Item -ItemType Directory -Path (Join-Path $stage 'src\Cassini') -Force
     $null = New-Item -ItemType Directory -Path (Join-Path $stage 'config') -Force
     foreach ($file in 'server.ps1', 'server.psd1', 'web.config') {
         Copy-Item -Path (Join-Path $repoRoot $file) -Destination $stage
     }
-    Copy-Item -Path (Join-Path $repoRoot 'config\portcullis.example.psd1') -Destination (Join-Path $stage 'config')
-    Copy-Item -Path (Join-Path $modulePath '*') -Destination (Join-Path $stage 'src\Portcullis') -Recurse
+    Copy-Item -Path (Join-Path $repoRoot 'config\cassini.example.psd1') -Destination (Join-Path $stage 'config')
+    Copy-Item -Path (Join-Path $modulePath '*') -Destination (Join-Path $stage 'src\Cassini') -Recurse
     Copy-Item -Path (Join-Path $repoRoot 'public') -Destination $stage -Recurse
 
-    $notes = $section.Groups['body'].Value.Trim() + "`n`nFull changelog: https://github.com/camusicjunkie/Portcullis/blob/$tag/CHANGELOG.md"
-    Update-ModuleManifest -Path (Join-Path $stage 'src\Portcullis\Portcullis.psd1') -ReleaseNotes $notes
+    $notes = $section.Groups['body'].Value.Trim() + "`n`nFull changelog: https://github.com/camusicjunkie/Cassini/blob/$tag/CHANGELOG.md"
+    Update-ModuleManifest -Path (Join-Path $stage 'src\Cassini\Cassini.psd1') -ReleaseNotes $notes
     Write-Information "Staged $tag at $stage. Deploy it by hand (docs/hosting-iis.md)."
 }
 

@@ -6,10 +6,10 @@ cannot judge. Style follows the PoshCode PowerShell Practice and Style guide.
 
 ## Safety
 
-- A function that changes a node runs only from a stored preview (`New-PortcullisPreview`), checks it with
-  `Assert-PortcullisPreview`, and takes every WSUS parameter from the preview or the configuration, never
+- A function that changes a node runs only from a stored preview (`New-CassiniPreview`), checks it with
+  `Assert-CassiniPreview`, and takes every WSUS parameter from the preview or the configuration, never
   from request data. Flag a confirm path that reads `$WebEvent.Data` for anything but the preview id.
-- Every change is audited with `Write-PortcullisAudit`, on success and on failure. Flag a change path that
+- Every change is audited with `Write-CassiniAudit`, on success and on failure. Flag a change path that
   can return or throw without an audit line.
 - Call WSUS module functions module-qualified (`WSUS\Approve-WsusRing`), so the Microsoft
   `UpdateServices\Deny-WsusUpdate` can never be picked up instead.

@@ -29,14 +29,14 @@ param (
 $devModules = Join-Path -Path $PSScriptRoot -ChildPath 'modules'
 $env:PSModulePath = $devModules + [IO.Path]::PathSeparator + $env:PSModulePath
 
-$work = Join-Path -Path ([IO.Path]::GetTempPath()) -ChildPath 'portcullis-dev'
+$work = Join-Path -Path ([IO.Path]::GetTempPath()) -ChildPath 'cassini-dev'
 $null = New-Item -ItemType Directory -Path $work -Force
-$configPath = Join-Path -Path $work -ChildPath 'portcullis.psd1'
+$configPath = Join-Path -Path $work -ChildPath 'cassini.psd1'
 $auditPath = Join-Path -Path $work -ChildPath 'audit.log'
 
 # Ring approvals of the fake WSUS module (dev/modules/WSUS), shared by Pode's runspaces.
-$env:PORTCULLIS_DEV_STATE = Join-Path -Path $work -ChildPath 'ring-approvals.txt'
-Remove-Item -LiteralPath $env:PORTCULLIS_DEV_STATE -ErrorAction SilentlyContinue
+$env:CASSINI_DEV_STATE = Join-Path -Path $work -ChildPath 'ring-approvals.txt'
+Remove-Item -LiteralPath $env:CASSINI_DEV_STATE -ErrorAction SilentlyContinue
 
 @"
 @{
@@ -45,7 +45,7 @@ Remove-Item -LiteralPath $env:PORTCULLIS_DEV_STATE -ErrorAction SilentlyContinue
     Authentication = 'None'
     ListenPort     = $Port
     AuditLogPath   = '$auditPath'
-    Title          = 'Portcullis (dev)'
+    Title          = 'Cassini (dev)'
     # No GPOs here: use the README schedule as configured.
     Schedule       = @{
         Pilot        = @{ Gpo = '' }

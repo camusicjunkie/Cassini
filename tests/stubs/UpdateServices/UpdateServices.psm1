@@ -1,4 +1,4 @@
-# Stub of the UpdateServices module for tests: only Get-WsusServer, which Find-PortcullisUpdate
+# Stub of the UpdateServices module for tests: only Get-WsusServer, which Find-CassiniUpdate
 # calls. The body throws so an unmocked call fails loudly.
 
 function Get-WsusServer {
