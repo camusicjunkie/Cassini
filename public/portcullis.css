@@ -654,16 +654,22 @@ div[role='table'] {
     margin-top: 0.6rem;
 }
 
-/* Icons in buttons sit on the text's centre line (MDI glyphs otherwise sit low). */
+/* Icons in buttons sit on the text's centre line. Pode.Web draws the glyph at a fixed 24px and
+   pushes it 4px down (position: relative; top: 4px); size it to the text and undo the push. */
 body[pode-theme] .btn .mdi {
     display: inline-flex;
     align-items: center;
     justify-content: center;
     line-height: 1;
+    height: auto;
 }
 
 body[pode-theme] .btn .mdi::before {
-    line-height: 1;
+    font-size: 1.1rem !important;
+    line-height: 1 !important;
+    height: auto !important;
+    position: static !important;
+    top: auto !important;
     vertical-align: 0;
 }
 
