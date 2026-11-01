@@ -14,6 +14,13 @@ Describe 'Portcullis module contract' {
         { Test-ModuleManifest -Path $script:manifestPath -ErrorAction Stop } | Should -Not -Throw
     }
 
+    It 'pins Pode and Pode.Web as required modules' {
+        $required = (Import-PowerShellDataFile -Path $script:manifestPath).RequiredModules
+        ($required | Where-Object { $_.ModuleName -eq 'Pode' }).RequiredVersion | Should -Be '2.14.1'
+        ($required | Where-Object { $_.ModuleName -eq 'Pode.Web' }).RequiredVersion | Should -Be '1.0.0'
+        (Get-Module -Name Portcullis).RequiredModules.Name | Should -Contain 'Pode.Web'
+    }
+
     It 'exports exactly the functions in Public/' {
         $exported = @((Import-PowerShellDataFile -Path $script:manifestPath).FunctionsToExport)
         $files = @((Get-ChildItem -Path (Join-Path -Path $PSScriptRoot -ChildPath '..\src\Portcullis\Public') -Filter '*.ps1').BaseName)

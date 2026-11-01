@@ -19,5 +19,6 @@ All notable changes to this project are documented here. The format follows
   an Application event.
 - Previews are kept server-side in the session, expire after `PreviewMaxAgeMinutes`, and are confirmed
   by id only.
+- Pode 2.14.1 and Pode.Web 1.0.0 pinned as `RequiredModules` in the Portcullis manifest.
 - Windows Authentication through IIS, limited to an AD group; a localhost-only mode without sign-in for
   development, with fake WSUS data (`dev/Start-DevServer.ps1`).

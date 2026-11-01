@@ -1,11 +1,18 @@
 # Dot-source in BeforeAll; pair with AfterAll { Remove-PortcullisTestEnvironment }.
-# Imports the WSUS and UpdateServices stubs and the Portcullis module, and defines helpers for a
-# test configuration in TestDrive.
+# Puts tests/stubs first on PSModulePath (so Portcullis's RequiredModules, Pode and Pode.Web, resolve
+# to the stubs), imports the WSUS and UpdateServices stubs and the Portcullis module, and defines
+# helpers for a test configuration in TestDrive.
 
 $script:repoRoot = Resolve-Path -Path (Join-Path -Path $PSScriptRoot -ChildPath '..\..')
 $stubRoot = Join-Path -Path $script:repoRoot -ChildPath 'tests\stubs'
+$script:testModuleNames = 'Portcullis', 'Pode.Web', 'Pode', 'WSUS', 'UpdateServices'
 
-Get-Module -Name Portcullis, WSUS, UpdateServices | Remove-Module -Force
+if (-not $env:PORTCULLIS_TEST_ORIGINAL_PSMODULEPATH) {
+    $env:PORTCULLIS_TEST_ORIGINAL_PSMODULEPATH = $env:PSModulePath
+}
+$env:PSModulePath = $stubRoot + [IO.Path]::PathSeparator + $env:PORTCULLIS_TEST_ORIGINAL_PSMODULEPATH
+
+Get-Module -Name $script:testModuleNames | Remove-Module -Force
 Import-Module -Name (Join-Path -Path $stubRoot -ChildPath 'WSUS\WSUS.psm1') -Global -Force
 Import-Module -Name (Join-Path -Path $stubRoot -ChildPath 'UpdateServices\UpdateServices.psm1') -Global -Force
 Import-Module -Name (Join-Path -Path $script:repoRoot -ChildPath 'src\Portcullis\Portcullis.psd1') -Global -Force
@@ -53,5 +60,9 @@ function Remove-PortcullisTestEnvironment {
     [Diagnostics.CodeAnalysis.SuppressMessageAttribute('PSUseShouldProcessForStateChangingFunctions', '',
         Justification = 'Test teardown helper; ShouldProcess adds nothing.')]
     param ()
-    Get-Module -Name Portcullis, WSUS, UpdateServices | Remove-Module -Force
+    Get-Module -Name $script:testModuleNames | Remove-Module -Force
+    if ($env:PORTCULLIS_TEST_ORIGINAL_PSMODULEPATH) {
+        $env:PSModulePath = $env:PORTCULLIS_TEST_ORIGINAL_PSMODULEPATH
+        Remove-Item -Path Env:\PORTCULLIS_TEST_ORIGINAL_PSMODULEPATH
+    }
 }

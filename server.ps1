@@ -32,7 +32,8 @@ param (
 $ErrorActionPreference = 'Stop'
 
 $portcullisManifest = Join-Path -Path $PSScriptRoot -ChildPath 'src\Portcullis\Portcullis.psd1'
-Import-Module -Name Pode, Pode.Web, WSUS
+# Portcullis's manifest brings in the pinned Pode and Pode.Web; a missing or wrong version fails here.
+Import-Module -Name WSUS
 Import-Module -Name $portcullisManifest -Force
 $config = Get-PortcullisConfig -Path $ConfigPath
 

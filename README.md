@@ -52,8 +52,10 @@ Pilot installs changed in between. The result table shows what was actually appr
 
 **Pode.Web version.** The only stable Pode.Web release is 0.8.3, from February 2023. Portcullis targets
 1.0.0 (preview3, May 2026), which is what the project is maintained on and which works with current Pode.
-Pin the exact versions in the internal gallery and test before moving to a newer preview: preview APIs
-can change.
+`Portcullis.psd1` pins both as `RequiredModules` (Pode 2.14.1, Pode.Web 1.0.0), so the server stops at
+start-up with a clear error if either is missing or a different version. A manifest can't name a
+prerelease label, so the Pode.Web entry matches any 1.0.0 build; install it with `-AllowPrerelease`. To
+move to a newer version, change the manifest and test first: preview APIs can change.
 
 ## Configuration
 
@@ -85,11 +87,12 @@ server.ps1                  the Pode.Web pages: layout and wiring only
 server.psd1                 Pode settings (request timeout)
 web.config                  IIS hosting
 config/                     portcullis.example.psd1 (copy to portcullis.psd1)
-src/Portcullis/             the logic, as a module with no Pode dependency, so it is unit-tested
+src/Portcullis/             the logic as a module (requires Pode and Pode.Web; it never calls them), unit-tested
   Public/                   one exported function per file
   Private/                  shared helpers (preview checks, audit writer, formatting)
 dev/                        local run with fake WSUS data
-tests/                      Pester tests; stubs of WSUS and UpdateServices
+tests/                      Pester tests; stubs of WSUS and UpdateServices, and stand-ins for Pode and
+                            Pode.Web so the tests need neither installed
 ```
 
 ## Develop
