@@ -1,7 +1,6 @@
 # Fake WSUS module for running the portal without WSUS (dev/Start-DevServer.ps1).
 # Same function names and parameters the portal uses, canned data, nothing real. Never deploy it.
 
-$script:Approved = [System.Collections.Generic.List[string]]::new()
 $script:Declined = [System.Collections.Generic.List[string]]::new()
 
 function Get-WsusNodeStatus {
@@ -26,7 +25,7 @@ function Get-WsusNodeStatus {
             SyncProcessedItems  = $null
             SyncTotalItems      = $null
             UpdateCount         = 4210
-            ApprovedUpdateCount = if ($isReplica) { 311 } else { 311 + $script:Approved.Count }
+            ApprovedUpdateCount = 311
             DeclinedUpdateCount = 3120 + $script:Declined.Count
             DownloadPendingMB   = 0
             DownloadFailedCount = 0
@@ -51,7 +50,6 @@ function Approve-WsusRing {
         @{ Update = '2026-10 Servicing Stack Update for Windows Server 2022'; Kb = '5066840'; Installed = 3; Needed = 3; Failed = 0; Age = 2 }
     )
     foreach ($c in $candidates) {
-        if ($script:Approved -contains $c.Kb) { continue }
         $percent = [int] [math]::Floor(100 * $c.Installed / $c.Needed)
         $reasons = @(
             if ($c.Age -lt $MinimumSoakDays) { 'approved for Pilot on {0:yyyy-MM-dd}, soak not finished' -f (Get-Date).AddDays(-$c.Age) }
@@ -61,8 +59,9 @@ function Approve-WsusRing {
         $gate = if (-not $reasons) { 'Passed' } elseif ($Force) { 'Forced' } else { 'Held' }
         $approvedTo = @()
         if ($gate -ne 'Held' -and $PSCmdlet.ShouldProcess($c.Update, 'Approve')) {
+            # Stateless on purpose: Pode runs requests in several runspaces, each with its own copy of
+            # this module, so remembered approvals would show differently from page to page.
             $approvedTo = 'Workstations', 'Servers'
-            $script:Approved.Add($c.Kb)
         }
         [PSCustomObject] @{
             PSTypeName = 'WSUS.RingApproval'

@@ -160,11 +160,21 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
                 Show-PodeWebModal -Name 'ConfirmRing' -DataValue $id
             }
         )
-        New-PodeWebCard -Name 'Result' -Content @(
-            New-PodeWebTable -Name 'RingResult' -DisplayName 'What was approved' -Compact -Columns @(
+        New-PodeWebCard -Name 'Result' -DisplayName 'Last approval' -Content @(
+            New-PodeWebText -Id 'ring_result_when' -Value ''
+            New-PodeWebTable -Name 'RingResult' -DisplayName 'What was approved' -Compact -NoRefresh -NoExport -Columns @(
                 Initialize-PodeWebTableColumn -Key 'Kb' -Name 'KB'
                 Initialize-PodeWebTableColumn -Key 'ApprovedTo' -Name 'Approved for'
-            )
+            ) -ScriptBlock {
+                # The last approval made in this session, so it is still here after leaving the page
+                # and coming back. A table loads after the page is drawn, so it also fills the line
+                # above it (a page Load event runs too early to reach either).
+                $last = $WebEvent.Session.Data.RingResult
+                if ($last) {
+                    Update-PodeWebText -Id 'ring_result_when' -Value "Approved $($last.When)."
+                    $last.Rows
+                }
+            }
         )
         New-PodeWebModal -Name 'ConfirmRing' -DisplayName 'Approve updates' -SubmitText 'Approve' -Content @(
             New-PodeWebText -Value 'Approve the updates that passed in the preview for the next rings? The gate is checked again now, so the result can differ slightly from the preview. Workstations install Wednesday and Servers Thursday, per the client GPO schedule.'
@@ -173,6 +183,12 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
             try {
                 $rows = Invoke-PortcullisRingApproval -Config (Get-PodeState -Name 'Config') -Preview $WebEvent.Session.Data.RingPreview -PreviewId $WebEvent.Data.Value -User $user -Confirm:$false
                 $approved = @($rows | Where-Object ApprovedTo).Count
+                # Kept in the session so the result is still here after leaving the page and coming back.
+                $WebEvent.Session.Data.RingResult = @{
+                    When = '{0:yyyy-MM-dd HH:mm} by {1}' -f (Get-Date), $user
+                    Rows = @($rows)
+                }
+                Update-PodeWebText -Id 'ring_result_when' -Value "Approved $($WebEvent.Session.Data.RingResult.When)."
                 Update-PodeWebTable -Name 'RingResult' -Data @($rows)
                 Show-PodeWebToast -Title 'Rings' -Message "Approved $approved update(s). The replica copies them on its next sync."
             }

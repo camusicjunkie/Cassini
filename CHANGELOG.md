@@ -22,6 +22,12 @@ All notable changes to this project are documented here. The format follows
 - Own theme over Pode.Web (`public/portcullis.css`), light and dark: system font, flat cards with
   chevron collapse buttons, lighter tables, near-white disabled buttons, spaced buttons, a hamburger
   toggle and an icon rail when the sidebar is collapsed. Empty result tables stay hidden.
+- Sidebar: hover only changes the colour; icons keep the same place and row height whether the
+  sidebar is open or collapsed, and a collapsed sidebar stays collapsed across pages.
+- Light/dark toggle in the top bar (kept in Pode.Web's theme cookie).
+- Promote rings keeps the last approval (who, when, what) in the session and shows it again when
+  the page is reopened.
+- Space between a table and the button under it.
 - Gate reasons and messages start with a capital letter.
 - Readable table headers, blank cells instead of "undefined", and words kept whole in table cells
   (`public/portcullis.css`); wide tables scroll sideways.
