@@ -10,7 +10,8 @@ All notable changes to this project are documented here. The format follows
 
 - Status page: both WSUS nodes from `Get-WsusNodeStatus`, refreshed every minute, with notes for an
   unreachable node, a role that differs from the configuration, and a replica behind the upstream.
-  Start a sync on either node.
+  Start a sync on either node. A refresh swaps the rows in place: the table keeps its rows and
+  height, with no spinner, until the new data arrives (`public/portcullis.js`).
 - Promote rings page: preview the `Approve-WsusRing` gate with soak, installed percent and Force, then
   confirm to approve what passed.
 - Decline page: look up a KB on the upstream with the same exact match as `Deny-WsusUpdate`, then confirm

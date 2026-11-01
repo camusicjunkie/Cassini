@@ -186,7 +186,7 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
             }
         )
         New-PodeWebModal -Name 'ConfirmRing' -DisplayName 'Approve updates' -SubmitText 'Approve' -Content @(
-            New-PodeWebText -Value 'Approve the updates that passed in the preview for the next rings? The gate is checked again now, so the result can differ slightly from the preview. Workstations install Wednesday and Servers Thursday, per the client GPO schedule.'
+            New-PodeWebText -Value 'Approve the updates that passed for the next rings? The gate is checked again, so the result may differ slightly from the preview.'
         ) -ScriptBlock {
             $user = Resolve-PortcullisUser -AuthUser $WebEvent.Auth.User
             try {

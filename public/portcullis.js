@@ -1,5 +1,45 @@
 // Portcullis additions to Pode.Web (served from public/ by Pode).
 
+// Pode.Web empties a table and shows its spinner the moment a refresh starts (the Status page's
+// minute timer, a refresh button, Sync-PodeWebTable), then fills it when the data arrives. The
+// card collapses and grows back: a flash. Keep the current rows on screen until the new ones
+// replace them, which Pode.Web's updateTable does in one step. A first load, with no rows yet,
+// still shows the spinner.
+keepRowsWhileRefreshing();
+
+function keepRowsWhileRefreshing() {
+    if (typeof PodeTable !== 'function' || PodeTable.prototype.portcullisKeepsRows) {
+        return;
+    }
+
+    var load = PodeTable.prototype.load;
+    PodeTable.prototype.load = function (data, sender, opts) {
+        var body = this.element ? this.element.find('table tbody') : null;
+        var rows = body && body.length ? body.children('tr').detach() : null;
+
+        this.portcullisHasRows = !!(rows && rows.length);
+        var result = load.call(this, data, sender, opts);
+        this.portcullisHasRows = false;
+
+        // Only if the table is still waiting: a static table is filled within the call itself.
+        if (rows && rows.length && body.children('tr').length === 0) {
+            body.append(rows);
+        }
+        return result;
+    };
+
+    // The spinner sits under the table and pushes the card taller; with rows still showing, the
+    // refresh needs no spinner. Pode.Web turns it on again when it sends the request.
+    var spinner = PodeTable.prototype.spinner;
+    PodeTable.prototype.spinner = function (show) {
+        if (show && (this.portcullisHasRows || (this.element && this.element.find('table tbody tr').length > 0))) {
+            return;
+        }
+        return spinner.call(this, show);
+    };
+    PodeTable.prototype.portcullisKeepsRows = true;
+}
+
 document.addEventListener('DOMContentLoaded', function () {
     // When the sidebar is collapsed to icons the page names are hidden: show each one as a tooltip.
     document.querySelectorAll('#sidebar-list a.nav-link').forEach(function (link) {
