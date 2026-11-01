@@ -83,7 +83,10 @@ function Get-PortcullisPatchCalendar {
         $events.Add((& $newEvent $last.Date.AddDays(1) 'action' 'Check for stragglers' 'Look at the Needed counts for machines that were off during their window.' -Timed $false))
     }
 
-    $events | Sort-Object -Property Sort | Select-Object -Property * -ExcludeProperty Sort | ForEach-Object {
+    # Windows PowerShell's Sort-Object is not stable: break ties by the order added above.
+    $order = 0
+    foreach ($item in $events) { $item | Add-Member -NotePropertyName Order -NotePropertyValue ($order++) }
+    $events | Sort-Object -Property Sort, Order | Select-Object -Property * -ExcludeProperty Sort, Order | ForEach-Object {
         $_.PSObject.TypeNames.Insert(0, 'Portcullis.CalendarEvent')
         $_
     }

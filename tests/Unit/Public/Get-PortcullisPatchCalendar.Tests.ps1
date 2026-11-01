@@ -34,10 +34,14 @@ Describe 'Get-PortcullisPatchCalendar' {
     }
 
     It 'returns the events in time order, typed, with the ring on installs' {
-        $sorted = @($script:events | Sort-Object -Property Date, Time)
-        @($script:events.Title) | Should -Be @($sorted.Title)
+        for ($i = 1; $i -lt $script:events.Count; $i++) {
+            $script:events[$i].Date | Should -BeGreaterOrEqual $script:events[$i - 1].Date
+        }
+        # Same moment: kept in cycle order.
+        @(($script:events | Where-Object Date -eq '2026-11-11').Title) | Should -Be @('Sync and Pilot approval', 'Run the Packer build')
         $script:events[0].PSObject.TypeNames | Should -Contain 'Portcullis.CalendarEvent'
         $script:events[0].PSObject.Properties.Name | Should -Not -Contain 'Sort'
+        $script:events[0].PSObject.Properties.Name | Should -Not -Contain 'Order'
         (Find-Event -Title 'Servers install').Ring | Should -Be 'Servers'
         (Find-Event -Title 'Servers install').Kind | Should -Be 'install'
     }
