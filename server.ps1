@@ -55,8 +55,15 @@ Start-PodeServer -RootPath $PSScriptRoot -ScriptBlock {
     Initialize-PodeWebTemplates -Title $config.Title -Theme Auto -NoPageFilter
     # Layout fixes (whole words in table cells, spaced buttons, hamburger and icon rail for the
     # collapsed sidebar) and page-name tooltips for that rail.
-    Import-PodeWebStylesheet -Url '/portcullis.css'
-    Import-PodeWebJavaScript -Url '/portcullis.js'
+    # The file's hash goes in the URL, so browsers fetch the new file after an upgrade instead of
+    # keeping the cached one for up to an hour (static caching is on in server.psd1).
+    $assetVersion = @{}
+    foreach ($asset in 'portcullis.css', 'portcullis.js') {
+        $assetPath = Join-Path -Path $PSScriptRoot -ChildPath "public\$asset"
+        $assetVersion[$asset] = (Get-FileHash -LiteralPath $assetPath -Algorithm SHA256).Hash -replace '^(.{12}).*$', '$1'
+    }
+    Import-PodeWebStylesheet -Url "/portcullis.css?v=$($assetVersion['portcullis.css'])"
+    Import-PodeWebJavaScript -Url "/portcullis.js?v=$($assetVersion['portcullis.js'])"
 
     if ($config.Authentication -eq 'IIS') {
         # Windows Authentication in IIS; nested AD membership counts.

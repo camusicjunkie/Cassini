@@ -24,6 +24,8 @@ All notable changes to this project are documented here. The format follows
   toggle and an icon rail when the sidebar is collapsed. Empty result tables stay hidden.
 - Sidebar: hover only changes the colour; icons keep the same place and row height whether the
   sidebar is open or collapsed, and a collapsed sidebar stays collapsed across pages.
+- `portcullis.css` and `portcullis.js` are requested with a hash of the file in the URL, so a new
+  version shows at once instead of after the browser's cached copy expires.
 - Light/dark toggle in the top bar (kept in Pode.Web's theme cookie).
 - Promote rings keeps the last approval (who, when, what) in the session and shows it again when
   the page is reopened.
