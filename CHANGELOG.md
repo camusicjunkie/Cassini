@@ -8,6 +8,9 @@ All notable changes to this project are documented here. The format follows
 
 ### Changed
 
+- Pode 2.14.2 (from 2.14.1): the session cookie's `Max-Age` is a whole number again (it was sent as
+  e.g. `899.9954201`), in-memory session clean-up no longer fails with "collection was modified", and
+  failed sockets are cleaned up. Nothing in the portal's code needed to change.
 - Renamed from Portcullis to Cassini: the module, every function (`*-Cassini*`), the `Cassini.*` type
   names, the `Cassini` event source, `C:\ProgramData\Cassini`, `config/cassini.psd1`, `public/cassini.css`
   and `cassini.js` (class prefix `cs-`), and the repository.
@@ -65,7 +68,7 @@ All notable changes to this project are documented here. The format follows
 - Gate reasons and messages start with a capital letter.
 - Readable table headers, blank cells instead of "undefined", and words kept whole in table cells
   (`public/cassini.css`); wide tables scroll sideways.
-- Pode 2.14.1 and Pode.Web 1.0.0 pinned as `RequiredModules` in the Cassini manifest.
+- Pode 2.14.2 and Pode.Web 1.0.0 pinned as `RequiredModules` in the Cassini manifest.
 - Windows Authentication through IIS, limited to an AD group; a localhost-only mode without sign-in for
   development, with fake WSUS data (`dev/Start-DevServer.ps1`). The fake WSUS remembers ring
   approvals until the dev server stops, so an approved update is gone from the next preview, as on a

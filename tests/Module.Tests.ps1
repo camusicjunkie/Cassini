@@ -16,7 +16,7 @@ Describe 'Cassini module contract' {
 
     It 'pins Pode and Pode.Web as required modules' {
         $required = (Import-PowerShellDataFile -Path $script:manifestPath).RequiredModules
-        ($required | Where-Object { $_.ModuleName -eq 'Pode' }).RequiredVersion | Should -Be '2.14.1'
+        ($required | Where-Object { $_.ModuleName -eq 'Pode' }).RequiredVersion | Should -Be '2.14.2'
         ($required | Where-Object { $_.ModuleName -eq 'Pode.Web' }).RequiredVersion | Should -Be '1.0.0'
         (Get-Module -Name Cassini).RequiredModules.Name | Should -Contain 'Pode.Web'
     }

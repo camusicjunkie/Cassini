@@ -16,7 +16,7 @@
     # The WSUS module is loaded by name at run time and stays out of this list: it only exists in the
     # internal gallery.
     RequiredModules      = @(
-        @{ ModuleName = 'Pode'; RequiredVersion = '2.14.1'; GUID = 'e3ea217c-fc3d-406b-95d5-4304ab06c6af' }
+        @{ ModuleName = 'Pode'; RequiredVersion = '2.14.2'; GUID = 'e3ea217c-fc3d-406b-95d5-4304ab06c6af' }
         @{ ModuleName = 'Pode.Web'; RequiredVersion = '1.0.0'; GUID = '5c6cae5a-8e62-48a4-c2e5-7511ffe2d439' }
     )
 

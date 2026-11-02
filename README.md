@@ -67,13 +67,13 @@ would reach. Times are client local time, as set in the GPO.
 - Windows PowerShell 5.1 with these modules installed for all users:
   - `WSUS` from the internal gallery (as in the WSUS README, section 1),
   - `UpdateServices` (the RSAT WSUS API: `Install-WindowsFeature UpdateServices-API`),
-  - `Pode` 2.14.1 and `Pode.Web` 1.0.0 (see the note below).
+  - `Pode` 2.14.2 and `Pode.Web` 1.0.0 (see the note below).
 - Network: the portal host to both nodes on 8531.
 - For install times from the ring GPOs: the GroupPolicy module (`Install-WindowsFeature GPMC`). Optional.
 
 **Pode.Web version.** The only stable Pode.Web release is 0.8.3, from February 2023. Cassini targets
 1.0.0 (preview3, May 2026), which is what the project is maintained on and which works with current Pode.
-`Cassini.psd1` pins both as `RequiredModules` (Pode 2.14.1, Pode.Web 1.0.0), so the server stops at
+`Cassini.psd1` pins both as `RequiredModules` (Pode 2.14.2, Pode.Web 1.0.0), so the server stops at
 start-up with a clear error if either is missing or a different version. A manifest can't name a
 prerelease label, so the Pode.Web entry matches any 1.0.0 build; install it with `-AllowPrerelease`. To
 move to a newer version, change the manifest and test first: preview APIs can change.
@@ -93,7 +93,7 @@ No WSUS server needed: `dev/Start-DevServer.ps1` runs the real server against fa
 UpdateServices modules with canned data, with no sign-in, on `http://localhost:8080`.
 
 ```powershell
-Install-Module Pode -RequiredVersion 2.14.1 -Scope CurrentUser
+Install-Module Pode -RequiredVersion 2.14.2 -Scope CurrentUser
 Install-Module Pode.Web -RequiredVersion 1.0.0-preview3 -AllowPrerelease -Scope CurrentUser
 ./dev/Start-DevServer.ps1
 ./dev/Start-DevServer.ps1 -ReplicaServer wsus02-offline.corp.local   # see an unreachable node

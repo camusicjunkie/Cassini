@@ -25,7 +25,7 @@ GPOs. Without it the portal uses the `Schedule` values in the configuration.
 
 ```powershell
 Install-Module WSUS -Repository LocalGallery -Scope AllUsers -Force -Credential (Get-Credential)
-Install-Module Pode -RequiredVersion 2.14.1 -Repository LocalGallery -Scope AllUsers
+Install-Module Pode -RequiredVersion 2.14.2 -Repository LocalGallery -Scope AllUsers
 Install-Module Pode.Web -RequiredVersion 1.0.0-preview3 -AllowPrerelease -Repository LocalGallery -Scope AllUsers
 ```
 
