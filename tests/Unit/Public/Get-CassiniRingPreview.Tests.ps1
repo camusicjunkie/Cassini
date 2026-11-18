@@ -32,6 +32,18 @@ Describe 'Get-CassiniRingPreview' {
         $rows[1].OnConfirm | Should -Be 'Hold'
     }
 
+    It 'adds the clients that have not reported when there are any' {
+        Mock -ModuleName Cassini Approve-WsusRing {
+            [PSCustomObject] @{ Update = 'CU'; Kb = '5001'; Installed = 17; Needed = 19; Unknown = 3; Percent = 77; Failed = 0; Gate = 'Held'; Reason = @('only 77% installed in Pilot (3 not reported)'); ApprovedTo = @() }
+            [PSCustomObject] @{ Update = 'SSU'; Kb = '5004'; Installed = 3; Needed = 3; Unknown = 0; Percent = 100; Failed = 0; Gate = 'Passed'; Reason = @(); ApprovedTo = @() }
+        }
+
+        $rows = (Get-CassiniRingPreview -Config $script:config).Rows
+
+        $rows[0].Installed | Should -Be '17 of 19 (77%), 3 not reporting'
+        $rows[1].Installed | Should -Be '3 of 3 (100%)'
+    }
+
     It 'counts approvable and held updates' {
         $summary = (Get-CassiniRingPreview -Config $script:config).Summary
 

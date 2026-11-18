@@ -9,7 +9,8 @@ function Get-CassiniRingPreview {
 
         Rows are flattened for the web table: Reason is one sentence, and OnConfirm says whether the
         update would be approved (for the target rings that don't have it yet) or held. Approve-WsusRing's
-        "held" warning is not repeated; the Summary counts them.
+        "held" warning is not repeated; the Summary counts them. Installed reads "17 of 19 (89%)", with
+        ", 3 not reporting" added when Pilot clients have not reported on the update.
     .EXAMPLE
         $result = Get-CassiniRingPreview -Config $config
         $result.Rows | Format-Table
@@ -45,12 +46,19 @@ function Get-CassiniRingPreview {
     $gate = WSUS\Approve-WsusRing @parameters -WsusServer $Config.UpstreamServer -Port $Config.Port -WhatIf -WarningAction SilentlyContinue
 
     $rows = @(foreach ($row in $gate) {
+            # WSUS module versions before the Unknown column have no such property: a missing value is 0.
+            $unknown = [int] $row.Unknown
+            $installed = '{0} of {1} ({2}%)' -f $row.Installed, $row.Needed, $row.Percent
+            if ($unknown -gt 0) {
+                $installed += ', {0} not reporting' -f $unknown
+            }
+
             [PSCustomObject] @{
                 PSTypeName = 'Cassini.RingRow'
                 Kb         = Format-CassiniKb -Value $row.Kb
                 Update     = $row.Update
                 Gate       = $row.Gate
-                Installed  = '{0} of {1} ({2}%)' -f $row.Installed, $row.Needed, $row.Percent
+                Installed  = $installed
                 Failed     = $row.Failed
                 Reason     = ConvertTo-CassiniSentence -Text (@($row.Reason) -join '; ')
                 OnConfirm  = if ($row.Gate -eq 'Held') { 'Hold' } else { 'Approve' }
