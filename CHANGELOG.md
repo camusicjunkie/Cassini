@@ -6,6 +6,12 @@ All notable changes to this project are documented here. The format follows
 
 ## [Unreleased]
 
+### Added
+
+- Promote rings shows how many Pilot clients have not reported on an update, for example
+  "17 of 19 (89%), 3 not reporting", when the WSUS module's `Approve-WsusRing` returns `Unknown`
+  (the dev server's fake WSUS now has a candidate with silent machines).
+
 ### Changed
 
 - Pode 2.14.2 (from 2.14.1): the session cookie's `Max-Age` is a whole number again (it was sent as

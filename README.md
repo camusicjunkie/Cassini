@@ -65,7 +65,9 @@ would reach. Times are client local time, as set in the GPO.
 - Windows Server with IIS, the ASP.NET Core Module V2 (in the .NET Hosting Bundle) and Windows
   Authentication. See [docs/hosting-iis.md](docs/hosting-iis.md).
 - Windows PowerShell 5.1 with these modules installed for all users:
-  - `WSUS` from the internal gallery (as in the WSUS README, section 1),
+  - `WSUS` from the internal gallery (as in the WSUS README, section 1), the release after 1.0.0 that
+    adds the `Unknown` column to `Approve-WsusRing`. With 1.0.0 the portal still works, but Promote rings
+    cannot show clients that have not reported, and the gate does not count them against the percent,
   - `UpdateServices` (the RSAT WSUS API: `Install-WindowsFeature UpdateServices-API`),
   - `Pode` 2.14.2 and `Pode.Web` 1.0.0 (see the note below).
 - Network: the portal host to both nodes on 8531.

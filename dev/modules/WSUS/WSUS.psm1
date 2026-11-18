@@ -60,7 +60,7 @@ function Approve-WsusRing {
     )
 
     $candidates = @(
-        @{ Update = '2026-10 Cumulative Update for Windows 11 Version 24H2 for x64-based Systems'; Kb = '5066835'; Installed = 18; Needed = 19; Failed = 0; Age = 6 }
+        @{ Update = '2026-10 Cumulative Update for Windows 11 Version 24H2 for x64-based Systems'; Kb = '5066835'; Installed = 17; Needed = 19; Unknown = 3; Failed = 0; Age = 6 }
         @{ Update = '2026-10 Cumulative Update for Microsoft server operating system version 24H2'; Kb = '5066836'; Installed = 4; Needed = 4; Failed = 0; Age = 6 }
         @{ Update = '2026-10 Security Update for Microsoft Edge'; Kb = '5066901'; Installed = 12; Needed = 19; Failed = 1; Age = 6 }
         @{ Update = '2026-10 Servicing Stack Update for Windows Server 2022'; Kb = '5066840'; Installed = 3; Needed = 3; Failed = 0; Age = 2 }
@@ -71,10 +71,16 @@ function Approve-WsusRing {
         if ($c.Kb -in $promoted) {
             continue
         }
-        $percent = [int] [math]::Floor(100 * $c.Installed / $c.Needed)
+        # Like the real one: computers that have not reported count against the percent.
+        $unknown = [int] $c.Unknown
+        $percent = [int] [math]::Floor(100 * $c.Installed / ($c.Needed + $unknown))
         $reasons = @(
             if ($c.Age -lt $MinimumSoakDays) { 'approved for Pilot on {0:yyyy-MM-dd}, soak not finished' -f (Get-Date).AddDays(-$c.Age) }
-            if ($percent -lt $MinimumInstalledPercent) { "only $percent% installed in Pilot" }
+            if ($percent -lt $MinimumInstalledPercent) {
+                $reason = "only $percent% installed in Pilot"
+                if ($unknown -gt 0) { $reason += " ($unknown not reported)" }
+                $reason
+            }
             if ($c.Failed -gt 0) { "$($c.Failed) failed in Pilot" }
         )
         $gate = if (-not $reasons) { 'Passed' } elseif ($Force) { 'Forced' } else { 'Held' }
@@ -89,6 +95,7 @@ function Approve-WsusRing {
             Kb         = $c.Kb
             Installed  = $c.Installed
             Needed     = $c.Needed
+            Unknown    = $unknown
             Percent    = $percent
             Failed     = $c.Failed
             Gate       = $gate
